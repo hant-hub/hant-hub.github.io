@@ -31,7 +31,56 @@ G: <input id = "green" min = "0" max = "1" step = "0.01" size = "8" type = "rang
 B: <input id = "blue" min = "0" max = "1" step = "0.01" size = "8" type = "range"/>
 <div />
 Size: <input id = "size" min = "0.01" max = "10" step = "0.04" size = "8" type = "range"/>
+<div />
+Smoothing: <input id = "smooth" min = "3" max = "12" step = "0.2" size = "8" type = "range"/>
 
+<p>
+So some info on the implementation. I didn't abstract via
+a setup, connect, handle clicks, render all function structure.
+</p>
+
+<p>
+Instead I have a draw point, which handles drawing and adding
+shapes when necessary. All the setup code is in main. And
+I abstracted some of the tedious elements like vertex attributes.
+</p>
+
+<p>
+I found that this setup gave me a good amount of control and
+didn't overly slow me down. I much prefer this I can
+reduce the number of webGL calls I make (updating and drawing with
+a single bind buffer). And I can also directly control how
+shapes are added into buffers, I use bufferSubData to incrementall
+update buffers when possible.
+</p>
+
+<p>
+To be clear, the merging of rendering and adding points is an intentional
+design decision which I believe slightly improves performance.
+</p>
+
+<p>
+Furthermore It gave me enough flexibility to swap out
+shaders when rendering circles. I also get fantastic performance,
+easily handling thousands of verticies without any notable
+decrease in performance, (I've personally tested up to 10,000
+verts).
+</p>
+
+<p>
+That is why I don't have functions like init webGL,
+connect variables to GLSL or render all shapes.
+</p>
+
+<p>
+I do plan to update my own helper library for Blocky Animals
+since I started this assignment thinking I needed to use
+WebGL 1. However for part 3 I found I was allowed to use
+WebGL 2 which allows for VAOs, uniform buffers, etc. All of
+which are huge improvements to the performance and capability
+of my programs. So the plan is to eventually do a rewrite
+with these in mind.
+</p>
 
 
 </body>

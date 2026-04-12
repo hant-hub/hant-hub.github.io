@@ -1,15 +1,36 @@
-function InitGL(id) {
-  var canvas = document.getElementById(id);
+function InitGL(id, webgl2) {
+    var canvas = document.getElementById(id);
+    if (!webgl2) {
 
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas, true);
-  if (!gl) {
-    console.log('Failed to get the rendering context for WebGL');
-    return;
-  }
+        // Get the rendering context for WebGL
+        var gl = getWebGLContext(canvas, true);
+        if (!gl) {
+            console.log('Failed to get the rendering context for WebGL');
+            return;
+        }
+        return { gl: gl, canvas: canvas };
+    }
+
+    var names = ["webgl2"];
+    var gl = null;
+    var opt_attribs = null;
+    for (var ii = 0; ii < names.length; ++ii) {
+        try {
+            gl = canvas.getContext(names[ii], opt_attribs);
+        } catch(e) {}
+        if (gl) {
+            break;
+        }
+    }
+
+    if (!gl) {
+        console.log('Failed to get the rendering context for WebGL');
+        return;
+    }
+
+    return { gl: gl, canvas: canvas };
 
 
-  return { gl: gl, canvas: canvas };
 }
 
 function CompileShaders(gl, vert, frag) {

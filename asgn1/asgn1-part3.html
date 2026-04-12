@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Idk A game or something?</title>
+</head>
+
+<body onload="main()">
+<canvas id="webgl" width="400" height="400">
+Please use the browser supporting "canvas".
+</canvas>
+
+<p> 
+This is a program which combines several elements.
+First and simplest the background and light rays are
+just static geometry with a good draw order. It ended
+up looking somewhat bad, but I didn't have the time
+to improve the ground.
+
+Then behind the static geometry is a particle simulation of
+a bunch of bubbles. They have a series of variables which
+determine where they spawn and how they move, and I used
+some basic diffuse lighting along with a specular reflection term
+borrowed from learn-opengl.com. Each bubble is a single triangle
+and is rendered based on a uv cutout technique.
+
+Finally the fish are each a quad where I've combined
+several implicit equations to produce a fish shape. Then
+they use the boid algorithm to swim around.
+
+Overall the program runs at 60fps, and can run at round 200fps
+theoretically according to performance measurements. If you
+want to check the performance it is printed out to the console
+every 3 seconds.
+</p>
+
+<div />
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-cse160.js"></script>
+    <script src="helpers.js"></script>
+    <script src="asgn1-part3.js"></script>
+
+</body>
+</html

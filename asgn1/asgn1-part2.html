@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>A Beautiful Painting</title>
+</head>
+
+<body onload="main()">
+<canvas id="webgl" width="400" height="400">
+Please use the browser supporting "canvas".
+</canvas>
+
+<p> I originally plotted out the letters on graph paper,
+since I knew they would require the most planning to look
+decent. I ended up slightly adjusting the H.
+
+For the shape, I had found an implicit formula for
+arbitary polygons online, and so I modified it to create
+a star shape as shown in the desmos screenshot. Then I
+simply scaled it multiple times to create the nested
+colors.
+
+Finally the for the background I just used a quad with vertex
+coloring to create a gradient.</p>
+
+<img src = "img/star.png" height = "300"/>
+<img src = "img/letters.png" height = "300"/>
+
+<div />
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="helpers.js"></script>
+    <script src="asgn1-part2.js"></script>
+
+</body>
+</html

@@ -33,11 +33,20 @@ var FCIRC_SRC =
     'precision mediump float;\n' +
     'varying vec4 VertColor;\n' +
     'varying vec2 uv;\n' +
+    'uniform float smoothing;\n' +
     'void main() {\n' +
+    '  float pi = 3.14159;\n' +
     '  vec2 center = uv - vec2(0.5, 0.5);\n' +
     '  float d = dot(center, center);\n' +
+    '  float angle = atan(center.y, center.x);\n' +
+    '  angle = angle * (smoothing / pi);\n' + 
+    '  angle = 2.0 * fract(0.5 * (angle - 1.0)) - 1.0;\n' +
+    '  angle *= pi/smoothing;\n' +
+    '  angle = 1.0/(cos(angle));\n' +
+    '  angle *= angle;\n' + 
     '  gl_FragColor = VertColor;\n' +
-    '  if (d > 0.01) discard;\n' +
+    '  if (d - (angle * 0.01) > 0.0) discard;\n' +
+    '  if (d - (angle * 0.0075) > 0.0) gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n' +
     '}\n';
 
 // Notes:
@@ -68,6 +77,7 @@ var verticies = [];
 var num_points = 0;
 var points = [];
 
+//-1 - Draw but don't add
 //0 - triangle
 //1 - square
 //2 - circle
@@ -82,6 +92,9 @@ function main() {
     var circ_prog = CompileShaders(gl, VCIRC_SRC, FCIRC_SRC);
     gl.useProgram(prog);
 
+    //here is my abstraction over vbo + vertex attributes.
+    //In future I'd just return a vao with all the correct
+    //data but this was originally written in webGL 1.0
     var polygons = CreateVertBuffer(gl, prog, [
         {name : 'a_Position', count : 2, type : gl.FLOAT},
         {name : 'a_Color', count : 3, type : gl.FLOAT},
@@ -92,19 +105,10 @@ function main() {
         {name : 'a_Color', count : 3, type : gl.FLOAT},
         {name : 'a_UV', count : 2, type : gl.FLOAT},
     ]);
-    //BindVerts(gl, prog, polygons);
-
-    //I think baking the data that varies between triangles into
-    //the vertex data is more efficient, but this is here to demonstrate
-    //that I do know how to set and get uniforms
-
-    // this would work but I disabled all the uniforms because they were basically useless.
-    //var loc = gl.getUniformLocation(prog, 'transparent');
-    //gl.uniform1f(loc, 1.0);
 
     // Register function (event handler) to be called on a mouse press
-    ctx.canvas.onmousedown = function(ev){ addpoint(ev, gl, ctx.canvas, prog, polygons, circles) };
-    ctx.canvas.onmousemove = function(ev){ addpoint(ev, gl, ctx.canvas, prog, polygons, circles) };
+    ctx.canvas.onmousedown = function(ev){ handleFrame(ev, gl, ctx.canvas, polygons, circles) };
+    ctx.canvas.onmousemove = function(ev){ handleFrame(ev, gl, ctx.canvas, polygons, circles) };
     document.getElementById("clear").onclick = function() {
         num_verts = 0;
         verticies = [];
@@ -123,7 +127,13 @@ function main() {
         mode = 2;
     }; 
 
-    //default to tris
+    document.getElementById("smooth").addEventListener("input", function(ev) {
+        var temp = mode;
+        mode = -1;
+        ev.buttons = 1;
+        handleFrame(ev, gl, ctx.canvas, polygons, circles);
+        mode = temp;
+    });
 
     // Specify the color for clearing <canvas>
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -138,7 +148,7 @@ var psize = 0;
 var csize = 0;
 var accum = 0;
 var frames = 0;
-function addpoint(ev, gl, canvas, prog, polygons, circles) {
+function handleFrame(ev, gl, canvas, polygons, circles) {
 
     if (ev.buttons != 1 && ev.buttons != 3) {
         return;
@@ -157,12 +167,12 @@ function addpoint(ev, gl, canvas, prog, polygons, circles) {
     x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
     y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
 
-    //better than uniform
     var scale = document.getElementById("size").value;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     BindVerts(gl, polygons);
+    //add triangle
     if (mode == 0) {
         verticies.push( scale *  0.0 + x,  scale *  0.1 + y, r, g, b);
         verticies.push( scale * -0.1 + x,  scale * -0.1 + y, r, g, b);
@@ -172,15 +182,20 @@ function addpoint(ev, gl, canvas, prog, polygons, circles) {
         // I think this is marginally faster on my machine, definitely would require
         // further testing, and probably would suck on mobile
         if (num_verts/3 >= psize) {
+
+            //resize then fill buffer with full data
             psize = psize ? psize * 2 : 20;
             gl.bufferData(gl.ARRAY_BUFFER, psize * 3 * 5 * 4, gl.DYNAMIC_DRAW);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, Float32Array.from(verticies));
         } else {
+
+            //write last triangle into buffer
             gl.bufferSubData(gl.ARRAY_BUFFER, num_verts * 5 * 4, Float32Array.from(verticies.slice(-15)));
         }
-        //gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from(verticies), gl.DYNAMIC_DRAW);
         num_verts += 3;
+
     } else if (mode == 1) {
+        //add quad
         verticies.push( scale * -0.1 + x,  scale *  0.1 + y, r, g, b);
         verticies.push( scale * -0.1 + x,  scale * -0.1 + y, r, g, b);
         verticies.push( scale *  0.1 + x,  scale * -0.1 + y, r, g, b);
@@ -207,7 +222,15 @@ function addpoint(ev, gl, canvas, prog, polygons, circles) {
     gl.drawArrays(gl.TRIANGLES, 0, num_verts);
 
     BindVerts(gl, circles);
+
+    //I could get the location and remember it, but I don't think
+    //its actually a huge perf gain
+    var smoothing = document.getElementById("smooth").value;
+    var loc = gl.getUniformLocation(circles.prog, 'smoothing');
+    gl.uniform1f(loc, smoothing);
+
     
+    //add circle
     if (mode == 2) {
         points.push( scale *  0.0 + x,  scale *  0.3 + y, r, g, b, 0.5, 1.0);
         points.push( scale * -0.3 + x,  scale * -0.3 + y, r, g, b, 0.0, 0.0);
