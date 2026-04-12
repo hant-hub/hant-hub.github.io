@@ -1,0 +1,337 @@
+\documentclass{article} 
+
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\title{CSE160 Homework 1}
+\author{Elijah Hantman}
+
+\renewcommand{\familydefault}{\sfdefault}
+%\renewcommand{\spn}[1]{\langle #1 \rangle}
+
+
+\begin{document}
+    \maketitle
+
+    {\large Part 1}
+    \begin{enumerate}
+        \item Normalize vector $\vec{v} = \begin{bmatrix}
+                1\\
+                2\\
+                3
+            \end{bmatrix} $. Round to 2 decimal places.
+
+            \begin{mdframed}
+                \begin{gather}
+                    ||\vec{v}|| = \sqrt{1 + 2^2 + 3^2}\\
+                    ||\vec{v}|| = \sqrt{1 + 4 + 9} = \sqrt{14}\\
+                    \frac{\vec{v}}{||\vec{v}||} = \begin{bmatrix}
+                        0.27\\
+                        0.53\\
+                        0.80
+                    \end{bmatrix}
+                \end{gather}
+            \end{mdframed}
+        \item Simplify and Find the Length of the Vector
+            \begin{displaymath}
+                3 * [1,1] + 2 * [-1, 1]
+            \end{displaymath}
+            \begin{mdframed}
+                \begin{gather}
+                    3 * [1,1] + 2 * [-1, 1]\\
+                    = [3, 3] + [-2, 2]\\
+                    = [1, 5]
+                \end{gather}
+
+                And the length:
+                \begin{gather}
+                    |[1, 5]| = \sqrt{1 + 5^2}\\
+                    = \sqrt{26}\\
+                    \approx 5.099
+                \end{gather}
+            \end{mdframed}
+            \break
+        \item Calculate the Cross Product
+            \begin{enumerate}
+                \item $[0,1,1] \times [1,1,0]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            \det{\begin{bmatrix}
+                                i & j & k\\ 
+                                0 & 1 & 1\\
+                                1 & 1 & 0
+                        \end{bmatrix}} = \\
+                        i(1)(0) + j(1)(1) + k(0)(1) - i(1)(1)
+                        - j(0)(0) - k(1)(1) = \\
+                        j - i - k = j - k = [-1, 1, -1]
+                        \end{gather}       
+                    \end{mdframed}
+                \item $[2, 3, 4] \times [1, 0, 0]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            \det{
+                                \begin{bmatrix}
+                                    i & j & k\\ 
+                                    2 & 3 & 4\\
+                                    1 & 0 & 0
+                                \end{bmatrix}
+                            } \\
+                            = i(3)(0) + j(4)(1) + k(2)(0)
+                            - i(4)(0) - j(2)(0) - k(3)(1)\\
+                            = 4j - 3k = [0, 4, -3]
+                        \end{gather}
+                    \end{mdframed}
+                \item $[0, 3, 4] \times [2, 2, 2]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            \det{
+                                \begin{bmatrix}
+                                    i & j & k\\ 
+                                    0 & 3 & 4\\
+                                    2 & 2 & 2
+                                \end{bmatrix}
+                            } = \\
+                            i(3)(2) + j(4)(2) + k(0)(2)
+                            - i(4)(2) - j(0)(2) - k(3)(2)\\
+                            = 6i + 8j - 8i - 6k\\
+                            = -2i + 8j -6k = [-2, 8, -6]
+                        \end{gather}
+                    \end{mdframed}
+            \end{enumerate}
+            \break
+        \item Calculate the Dot Product
+            \begin{enumerate}
+                \item $[1, 0, 1] \cdot [0, 1, 1]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            1 \cdot 0 + 0 \cdot 1 + 1 \cdot 1\\
+                            = 1
+                        \end{gather}
+                    \end{mdframed}
+                \item $[0, 3, 4] \cdot [1, 0, 0]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            0 \cdot 1 + 3 \cdot 0 + 4 \cdot 0\\
+                            = 0
+                        \end{gather}
+                    \end{mdframed}
+                \item $[2, 3, 4] \cdot [6, 4, 3]$
+                    \begin{mdframed}
+                        \begin{gather}
+                            2 \cdot 6 +
+                            3 \cdot 4 +
+                            4 \cdot 3\\
+                            = 12 + 12 + 12 = 36
+                        \end{gather}
+                    \end{mdframed}
+            \end{enumerate}
+            \break
+        \item Consider a triangle formed by connecting the three points $p_1 = (0, 0, 0)$, $p_2 = (1, 0, 0)$
+            and $p_3 = (1, 1, 1)$.
+            \begin{mdframed}
+                First we find $p_2 - p_1$ and $p_3 - p_1$
+
+                \begin{gather}
+                    p_2 - p_1 = (1 - 0, 0 - 0, 0 - 0) = (1, 0, 0)\\
+                    p_3 - p_1 = (1 - 0, 1 - 0, 1 - 0) = (1, 1, 1)
+                \end{gather}
+
+                Here, since $p_1 = \vec{0}$ we don't technically have to
+                subtract, but a general method would subtract
+
+                Then we use the cross product.
+
+                \begin{gather}
+                    p_2 \times p_3 = (0 * 1 - 0 * 1, 0 * 1 - 1 * 1, 1 * 1 - 0 * 1)\\
+                    = (0, -1, 1)
+                \end{gather}
+
+                Now, the cross product is also known to be perpendicular
+                to its factors, meaning that $(0, -1, 1)$ has a positive
+                z direction and is perpendicular to the triangle.
+
+                To find the area we simply divide the length of the cross product
+                by 2 since the cross product is the area of a parallelogram.
+
+                \begin{gather}
+                    |(0, -1, 1)| = \sqrt{1 + 1} = \sqrt{2}\\
+                    A = \frac{\sqrt{2}}{2}
+                \end{gather}
+            \end{mdframed}
+
+        \item Calculate the Matrix 
+            \begin{enumerate}
+                \item 
+                    \begin{gather}
+                        \begin{bmatrix}
+                            1 & 2 & 5\\ 
+                            -1 & -1 & 1\\
+                            4 & 4 & -2
+                        \end{bmatrix} \cdot
+                        \begin{bmatrix}
+                            1\\ 
+                            2\\
+                            3
+                        \end{bmatrix}\\
+                        = \begin{bmatrix}
+                            1\\ 
+                            -1\\
+                            4
+                        \end{bmatrix} +
+                        \begin{bmatrix}
+                            4\\ 
+                            -2\\
+                            8
+                        \end{bmatrix} +
+                        \begin{bmatrix}
+                            15\\ 
+                            3\\
+                            -6
+                        \end{bmatrix}\\
+                        = \begin{bmatrix}
+                            20\\ 
+                            0\\
+                            6
+                        \end{bmatrix}
+                    \end{gather}
+                \item 
+                    \begin{gather}
+                        \begin{bmatrix}
+                            2 & 0 & 3\\ 
+                            0 & -1 & 2\\
+                            3 & 2 & -2
+                        \end{bmatrix} \cdot
+                        \begin{bmatrix}
+                            -1 & -4 & 1\\ 
+                            1 & -1 & 4\\
+                            0 & 0 & 5
+                        \end{bmatrix}\\
+                        =
+                        \begin{bmatrix}
+                            -2 & -8 & 17\\ 
+                            -1 & 1 & 6\\
+                            -1 & -14 & 1
+                        \end{bmatrix}
+                    \end{gather}
+            \end{enumerate}
+        \item Consider Two lines $y = 4/3 x - 1$ and
+            $y = 0$
+            \begin{enumerate}
+                \item Find the intersection of the two lines
+
+                    \begin{mdframed}
+                        \begin{gather}
+                            0 = 4/3 x - 1\\
+                            1 = 4/3 x\\
+                            3/4 = x\\
+                            y = 4/3(3/4) - 1\\
+                            y = 1 - 1\\
+                            y = 0
+                        \end{gather}
+
+                        The intersection is $(0.75, 0)$.
+                    \end{mdframed}
+                \item Are these lines Perpendicular
+                    \begin{mdframed}
+                        No.
+
+                        We can directly calculate this by taking
+                        the dot product of the direction of each line.
+                        This works since $cos(90^{\circ}) = 0$. If
+                        the result is nonzero then the lines must not
+                        be perpendicular.
+
+                        To get the directions we take rise over run.
+
+                        \begin{gather}
+                            d_0 = (3, 4)\\
+                            d_1 = (1, 0)\\
+                            d_0 \cdot d_1 = (3 * 1 + 4 * 0) = 3
+                        \end{gather}
+                    \end{mdframed}
+            \end{enumerate}
+    \end{enumerate}
+    \break
+
+    {\large Part 2}
+
+    \begin{enumerate}
+        \item Define OpenGL, OpenGL ES and WebGL. Describe their relationship.
+            \begin{mdframed}
+                OpenGL is a standard API for communicating to graphics
+                drivers and their associated graphics processing units.
+                The main characteristics of OpenGL is being fairly high level
+                in terms of API and being an open standard meaning it is not
+                propriatary to any specific platform or device.
+
+                OpenGL ES is a version of the OpenGL standard geared towards
+                mobile devices and embedded systems, hence the name
+                OpenGL ES (Embedded Systems).
+
+                WebGL is an API provided by browsers to javascript websites
+                in order for web applications to utilize GPU acceleration.
+                It is based on OpenGL ES.
+
+                Each of these are related in the following ways. OpenGL is
+                the oldest. OpenGL ES was based on an OpenGL version,
+                meaning OpenGL ES 1.1 was based on OpenGL 1.5, and OpenGL ES
+                2.0 was based on OpenGL 2.0. WebGL is based on OpenGL ES,
+                and tracks along with the ES standard.
+            \end{mdframed} 
+        \item What is the difference in the software architecture of a webpage and a webpage using WebGL.
+            Describe all components involved in the two cases.
+            \begin{mdframed}
+                A standard webpage uses 3 languages. First html
+                defines the main structure of the page, defining
+                each element.
+
+                Then CSS is used to layout the page, setting colors,
+                styling and how html elements should be organized.
+
+                Javascript is then run in an event loop which provides
+                interactivity in the browser without needing a full
+                roundtrip request.
+
+                A WebGL webpage simply adds a connection to OpenGL ES
+                which provides an api in javascript.
+
+                These translate to the following software browser components,
+                an html rendering engine that handles CSS,
+                a javascript runtime,
+                and an OpenGL ES context, which is provided by the
+                driver.
+            \end{mdframed}
+        \item In HTML, what is the <canvas> tag?
+            \begin{mdframed}
+                The Canvas tag provides a buffer and html element
+                which javascript can render to. It can be written
+                to via cpu side instructions, and in the context
+                of WebGL it is a buffer which can be rendered
+                to and displayed on the webpage.
+            \end{mdframed}
+        \item In Javascript, what line of code one writes to retrieve a 2D rendering context?
+            \begin{mdframed}
+                Assuming you already have the canvas, meaning you did something like
+
+                \begin{lstlisting}[language=C]
+var canvas = document.getElementbyID("name");
+                \end{lstlisting}
+
+                According to the Mozilla developer documentation
+                to get a webgl context you do:
+
+                \begin{lstlisting}[language=C]
+var gl = canvas.getContext("webgl"); 
+                \end{lstlisting}
+
+                According to the textbook the specific string
+                used to get the context varies between browsers
+                so you would normally replace it with a function.
+            \end{mdframed}
+    \end{enumerate}
+
+
+\end{document}
