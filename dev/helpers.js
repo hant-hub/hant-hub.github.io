@@ -1,0 +1,374 @@
+
+var helpers = function() {
+    function InitGL(id, webgl2) {
+        var canvas = document.getElementById(id);
+        if (!webgl2) {
+
+            // Get the rendering context for WebGL
+            var gl = getWebGLContext(canvas, true);
+            if (!gl) {
+                console.log('Failed to get the rendering context for WebGL');
+                return;
+            }
+            return { gl: gl, canvas: canvas };
+        }
+
+        var names = ["webgl2"];
+        var gl = null;
+        var opt_attribs = null;
+        for (var ii = 0; ii < names.length; ++ii) {
+            try {
+                gl = canvas.getContext(names[ii], opt_attribs);
+            } catch (e) { }
+            if (gl) {
+                break;
+            }
+        }
+
+        if (!gl) {
+            console.log('Failed to get the rendering context for WebGL');
+            return;
+        }
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        return {
+            gl: gl,
+            canvas: canvas,
+            state: {
+                prog: null,
+                vertexbuffer: null,
+                uniformbuffer: null,
+                uniform_block_index: 0,
+            },
+        };
+    }
+
+    function ParseGeneralType(gl, type) {
+
+        switch (type) {
+            case gl.FLOAT:
+                return {
+                    type: gl.FLOAT,
+                    count: 1,
+                    size: 4,
+                };
+            case gl.FLOAT_VEC2:
+                return {
+                    type: gl.FLOAT,
+                    count: 2,
+                    size: 8,
+                };
+            case gl.FLOAT_VEC3:
+                return {
+                    type: gl.FLOAT,
+                    count: 3,
+                    size: 12,
+                };
+            case gl.FLOAT_VEC4:
+                return {
+                    type: gl.FLOAT,
+                    count: 4,
+                    size: 16,
+                };
+            default:
+                console.log("Unknown Attr Type");
+                return {
+                    type: gl.FLOAT,
+                    count: 0,
+                    size: 0,
+                };
+        }
+    }
+
+    /** 
+        CompileShaders(ctx, vert, frag)
+    ctx -> global context
+    vert -> Vertex Shader Source (string)
+    frag -> Fragment Shader Source (string)
+
+    returns 
+    {
+        p -> shader Program
+        attrs -> List of vertex attributes
+        uniforms -> List of uniform locations
+        (Uniform locations do not include uniform buffer objects)
+        count -> Number of floats per vertex
+    }
+
+    */
+    function CompileShaders(ctx, vert, frag) {
+        var gl = ctx.gl;
+
+        // Initialize shaders
+        var program = createProgram(gl, vert, frag);
+        if (!program) {
+            console.log('Failed to intialize shaders.');
+            return;
+        }
+
+        //parse attributes
+        var attr_infos = [];
+        var stride = 0;
+        var count = 0;
+
+        const numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        for (var i = 0; i < numAttribs; i++) {
+            const info = gl.getActiveAttrib(program, i);
+            const location = gl.getAttribLocation(program, info.name);
+            const tinfo = ParseGeneralType(gl, info.type);
+
+            attr_infos.push({
+                location: location,
+                type: tinfo.type,
+                count: tinfo.count,
+                stride: 0,
+                offset: stride,
+            });
+
+            stride += tinfo.size;
+            count += tinfo.count;
+        }
+
+        for (var i = 0; i < numAttribs; i++) {
+            attr_infos[i].stride = stride;
+        }
+
+        //parse Uniforms
+        var uniforms = [];
+        const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+        for (var i = 0; i < numUniforms; i++) {
+            const uinfo = gl.getActiveUniform(program, i);
+            const location = gl.getUniformLocation(program, uinfo.name);
+            if (location) {
+                uniforms.push({
+                    location: location,
+                });
+            }
+        }
+
+        return {
+            p: program,
+            attrs: attr_infos,
+            uniform_loc: uniforms,
+            count: count,
+        };
+    }
+
+    /**
+        Currently Under Development Do Not Use
+    */
+    function GetUniformBlock(ctx, prog, block_name, members) {
+        var gl = ctx.gl;
+
+        //var blockIndex = gl.getUniformBlockIndex(prog, block_name);
+        //var blockSize = gl.getActiveUniformBlockParameter(
+        //    prog,
+        //    blockIndex,
+        //    gl.UNIFORM_BLOCK_DATA_SIZE
+        //);
+
+        //var uniform_indicies = gl.getUniformIndices(
+        //    prog.p,
+        //    members
+        //);
+
+        var num_blocks = gl.getProgramParameter(prog.p, 
+            gl.ACTIVE_UNIFORM_BLOCKS
+        );
+        var active_indicies = gl.getActiveUniformBlockParameter(
+            prog.p,
+            1,
+            gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
+        );
+
+        var uniform_offsets = gl.getActiveUniforms(
+            prog.p,
+            active_indicies,
+            gl.UNIFORM_BLOCK_INDEX,
+        );
+
+        console.log(uniform_offsets);
+        console.log(active_indicies);
+        console.log(num_blocks);
+    }
+
+    function CreateVertBuffer(ctx, prog) {
+        var gl = ctx.gl;
+        var buffer = gl.createBuffer();
+        var vao = gl.createVertexArray();
+
+        gl.bindVertexArray(vao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+
+        for (var i = 0; i < prog.attrs.length; i++) {
+            var attr = prog.attrs[i];
+            gl.vertexAttribPointer(attr.location, attr.count, attr.type, false, attr.stride, attr.offset);
+            gl.enableVertexAttribArray(attr.location);
+        }
+
+        console.log("vertsize: " + prog.attrs[0].stride);
+
+        var vert = {
+            vao: vao,
+            buffer: buffer,
+            size: 0,
+            cap: 0,
+            div: prog.count,
+            vert_size: prog.attrs[0].stride,
+        };
+
+        ctx.state.vertexbuffer = vert;
+        return vert;
+
+    }
+
+    function CreateUniformBuffer(ctx, size) {
+        var gl = ctx.gl;
+        var buffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.UNIFORM_BUFFER, buffer);
+
+        gl.bindBufferBase(gl.UNIFORM_BUFFER,
+            ctx.state.uniform_block_index,
+            buffer
+        );
+
+        gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW);
+
+        var out = {
+            buf: buffer,
+            size: 0,
+            cap: size,
+            bindpoint: ctx.state.uniform_block_index++,
+        };
+
+        ctx.state.uniformbuffer = out;
+        return out;
+    }
+
+    function UploadUniformBuffer(ctx, buffer, data) {
+        var gl = ctx.gl;
+
+        if (ctx.state.uniformbuffer !== buffer) {
+            gl.bindBuffer(gl.UNIFORM_BUFFER, buffer.buf);
+            ctx.state.uniformbuffer = buffer;
+        }
+
+        if (data.length*4 > buffer.size) {
+            return 1;
+        }
+
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 
+            0,
+            Float32Array.from(data)
+        );
+
+        buffer.size = data.length * 4;
+        return 0;
+    }
+
+    function UploadVertBuffer(ctx, buffer, vertices) {
+        var gl = ctx.gl;
+
+        if (ctx.state.vertexbuffer !== buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+            gl.bindVertexArray(buffer.vao);
+            ctx.state.vertexbuffer = buffer;
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from(vertices), gl.DYNAMIC_DRAW);
+        buffer.size = vertices.length / buffer.div;
+        buffer.cap = buffer.size;
+    }
+
+    function ResizeVertBuffer(ctx, buffer, newsize) {
+        var gl = ctx.gl;
+
+        if (ctx.state.vertexbuffer !== buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+            gl.bindVertexArray(buffer.vao);
+            ctx.state.vertexbuffer = buffer;
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, newsize * buffer.vert_size, gl.DYNAMIC_DRAW);
+
+        buffer.size = 0;
+        buffer.cap = newsize;
+    }
+
+    function PushVerts(ctx, buffer, verts) {
+        var gl = ctx.gl;
+
+        if (ctx.state.vertexbuffer !== buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+            gl.bindVertexArray(buffer.vao);
+            ctx.state.vertexbuffer = buffer;
+        }
+
+        if (buffer.size + (verts.length/buffer.div) > buffer.cap) {
+            return 1;
+        }
+
+        gl.bufferSubData(
+            gl.ARRAY_BUFFER, 
+            buffer.size * buffer.vert_size,
+            Float32Array.from(verts),
+        );
+
+        buffer.size += verts.length/buffer.div;
+        return 0;
+    }
+
+    function SubVerts(ctx, buffer, offset, verts) {
+        var gl = ctx.gl;
+
+        if (ctx.state.vertexbuffer !== buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+            gl.bindVertexArray(buffer.vao);
+            ctx.state.vertexbuffer = buffer;
+        }
+
+        if (offset + (verts.length/buffer.div) > buffer.cap) {
+            return 1;
+        }
+
+        gl.bufferSubData(
+            gl.ARRAY_BUFFER, 
+            offset * buffer.vert_size,
+            Float32Array.from(verts),
+        );
+
+        buffer.size = Math.max(offset + verts.length/buffer.div, buffer.size);
+        return 0;
+    }
+
+    function DrawBuffer(ctx, prog, buffer) {
+        var gl = ctx.gl;
+
+        if (ctx.state.prog !== prog) {
+            gl.useProgram(prog.p);
+            ctx.state.prog = prog;
+        }
+
+        if (ctx.state.vertexbuffer !== buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+            gl.bindVertexArray(buffer.vao);
+            ctx.state.vertexbuffer = buffer;
+        }
+
+        gl.drawArrays(gl.TRIANGLES, 0, buffer.size);
+    }
+
+    return {
+        InitGL: InitGL,
+        CompileShaders: CompileShaders,
+        CreateUniformBuffer: CreateUniformBuffer,
+        CreateVertBuffer: CreateVertBuffer,
+        ResizeVertBuffer: ResizeVertBuffer,
+        PushVerts: PushVerts,
+        GetUniformBlock: GetUniformBlock,
+        SubVerts: SubVerts,
+        UploadVertBuffer: UploadVertBuffer,
+        DrawBuffer: DrawBuffer,
+    };
+}();
