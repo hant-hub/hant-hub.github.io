@@ -72,6 +72,7 @@ var helpers = function() {
                 };
             default:
                 console.log("Unknown Attr Type");
+                console.log(type);
                 return {
                     type: gl.FLOAT,
                     count: 0,
@@ -111,9 +112,16 @@ var helpers = function() {
         var stride = 0;
         var count = 0;
 
-        const numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        var numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        var builtins = 0;
         for (var i = 0; i < numAttribs; i++) {
             const info = gl.getActiveAttrib(program, i);
+
+            if (info.name == "gl_VertexID") {//skip builtin vars
+                builtins++;
+                continue;
+            }
+
             const location = gl.getAttribLocation(program, info.name);
             const tinfo = ParseGeneralType(gl, info.type);
 
@@ -129,6 +137,8 @@ var helpers = function() {
             count += tinfo.count;
         }
 
+        numAttribs -= builtins;
+
         for (var i = 0; i < numAttribs; i++) {
             attr_infos[i].stride = stride;
         }
@@ -142,6 +152,7 @@ var helpers = function() {
             if (location) {
                 uniforms.push({
                     location: location,
+                    type: uinfo.type,
                 });
             }
         }
@@ -180,8 +191,6 @@ var helpers = function() {
 
         console.log(block_data);
 
-
-
         return {
             p: program,
             attrs: attr_infos,
@@ -214,6 +223,7 @@ var helpers = function() {
             cap: 0,
             div: prog.count,
             vert_size: prog.attrs[0].stride,
+            inv_divisor: 1,
         };
 
         ctx.state.vertexbuffer = vert;
@@ -262,7 +272,7 @@ var helpers = function() {
         return 0;
     }
 
-    function UploadUniform(ctx, buffer, idx, data) {
+    function UploadUniform(ctx, buffer, type, idx, data) {
         var gl = ctx.gl;
 
         if (ctx.state.uniformbuffer !== buffer) {
@@ -270,12 +280,46 @@ var helpers = function() {
             ctx.state.uniformbuffer = buffer;
         }
 
+        var buf = null;
+
+        switch (type) {
+            case 0:
+                buf = Float32Array.from(data);
+                break;
+            case 1:
+                buf = Int32Array.from(data);
+                break;
+        }
+
+        //console.log("Uniform Offset: " + buffer.offsets[idx]);
         gl.bufferSubData(gl.UNIFORM_BUFFER, 
             buffer.offsets[idx],
-            Float32Array.from(data)
+            buf
         );
 
         return 0;
+    }
+
+    function SetUniform(ctx, prog, index, value) {
+        var gl = ctx.gl;
+
+        if (ctx.state.prog !== prog) {
+            gl.useProgram(prog.p);
+            ctx.state.prog = prog;
+        }
+
+        const info = prog.uniform_loc[index];
+
+        switch (info.type) {
+            case gl.FLOAT_MAT4: {
+                gl.uniformMatrix4fv(info.location, false, value);
+            } break;
+            default: {
+                console.log("Unknown Uniform Type!");
+                return;
+            }
+        }
+        
     }
 
     function UploadVertBuffer(ctx, buffer, vertices) {
@@ -367,7 +411,18 @@ var helpers = function() {
             ctx.state.vertexbuffer = buffer;
         }
 
-        gl.drawArrays(gl.TRIANGLES, 0, buffer.size);
+        gl.drawArrays(gl.TRIANGLES, 0, buffer.size * buffer.inv_divisor);
+    }
+
+    function Draw(ctx, prog, num_verts) {
+        var gl = ctx.gl;
+
+        if (ctx.state.prog !== prog) {
+            gl.useProgram(prog.p);
+            ctx.state.prog = prog;
+        }
+
+        gl.drawArrays(gl.TRIANGLES, 0, num_verts);
     }
 
     return {
@@ -381,6 +436,8 @@ var helpers = function() {
         UploadVertBuffer: UploadVertBuffer,
         UploadUniformBuffer: UploadUniformBuffer,
         UploadUniform: UploadUniform,
+        SetUniform: SetUniform,
         DrawBuffer: DrawBuffer,
+        Draw: Draw,
     };
 }();

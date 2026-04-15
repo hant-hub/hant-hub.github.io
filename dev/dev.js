@@ -27,7 +27,7 @@ var FSHADER_SOURCE = `#version 300 es
     } b2;
 
     void main() {
-        fragColor = VertColor;
+        fragColor = VertColor + vec4(b.test, 0.0, 0.0);
     }`;
 
 
@@ -39,9 +39,9 @@ function main() {
     var buffer = helpers.CreateVertBuffer(ctx, prog);
 
     var verticies = [
-        0.0,  0.5,  1.0, 1.0, 1.0,
-       -0.5, -0.5,  1.0, 1.0, 1.0,
-        0.5, -0.5,  1.0, 1.0, 1.0,
+        0.0,  0.5,  0.0, 0.0, 1.0,
+       -0.5, -0.5,  0.0, 0.0, 1.0,
+        0.5, -0.5,  0.0, 0.0, 1.0,
     ];
 
     var verticies2 = [
@@ -60,8 +60,8 @@ function main() {
 
     helpers.SubVerts(ctx, buffer, 3, verticies);
     
-    var uniform_buf = helpers.CreateUniformBuffer(ctx, 4 * 4);
-    helpers.GetUniformBlock(ctx, prog, "test", []);
+    var uniform_buf = helpers.CreateUniformBuffer(ctx, prog, 0);
+    helpers.UploadUniform(ctx, uniform_buf, 0, [1.0, 1.0]);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);

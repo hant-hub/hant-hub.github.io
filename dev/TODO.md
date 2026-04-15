@@ -1,11 +1,11 @@
 
 ## TODO List:
-- [ ] Update CompileShaders
-    - [ ] Get Uniform Blocks
-    - [ ] Get Uniform Block members
-- [ ] Uniform Buffers
-    - [ ] Alloc Uniform Buffer (maybe shared?)
-    - [ ] Bind Uniform Buffer to Block
+- [X] Update CompileShaders
+    - [X] Get Uniform Blocks
+    - [X] Get Uniform Block members
+- [X] Uniform Buffers
+    - [X] Alloc Uniform Buffer (maybe shared?)
+    - [X] Bind Uniform Buffer to Block
 - [ ] Textures
     - [ ] Create Texture
     - [ ] Upload Image Data
