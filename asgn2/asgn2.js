@@ -1,155 +1,12 @@
-var VSHADER_SOURCE = `#version 300 es
-    out vec4 VertColor;
-    uniform mat4 pv;
-
-    vec3 verts[] = vec3[](
-        // Back face
-        vec3(-0.5f, -0.5f, -0.5f), // Bottom-left
-        vec3( 0.5f, -0.5f, -0.5f), // bottom-right    
-        vec3( 0.5f,  0.5f, -0.5f), // top-right              
-        vec3( 0.5f,  0.5f, -0.5f), // top-right
-        vec3(-0.5f,  0.5f, -0.5f), // top-left
-        vec3(-0.5f, -0.5f, -0.5f), // bottom-left                
-        // Front face
-        vec3(-0.5f, -0.5f,  0.5f), // bottom-left
-        vec3( 0.5f,  0.5f,  0.5f), // top-right
-        vec3( 0.5f, -0.5f,  0.5f), // bottom-right        
-        vec3( 0.5f,  0.5f,  0.5f), // top-right
-        vec3(-0.5f, -0.5f,  0.5f), // bottom-left
-        vec3(-0.5f,  0.5f,  0.5f), // top-left        
-        // Left face
-        vec3(-0.5f,  0.5f,  0.5f), // top-right
-        vec3(-0.5f, -0.5f, -0.5f), // bottom-left
-        vec3(-0.5f,  0.5f, -0.5f), // top-left       
-        vec3(-0.5f, -0.5f, -0.5f), // bottom-left
-        vec3(-0.5f,  0.5f,  0.5f), // top-right
-        vec3(-0.5f, -0.5f,  0.5f), // bottom-right
-        // Right face
-        vec3( 0.5f,  0.5f,  0.5f), // top-left
-        vec3( 0.5f,  0.5f, -0.5f), // top-right      
-        vec3( 0.5f, -0.5f, -0.5f), // bottom-right          
-        vec3( 0.5f, -0.5f, -0.5f), // bottom-right
-        vec3( 0.5f, -0.5f,  0.5f), // bottom-left
-        vec3( 0.5f,  0.5f,  0.5f), // top-left
-        // Bottom face 
-        vec3(-0.5f, -0.5f, -0.5f), // top-right
-        vec3( 0.5f, -0.5f,  0.5f), // bottom-left
-        vec3( 0.5f, -0.5f, -0.5f), // top-left        
-        vec3( 0.5f, -0.5f,  0.5f), // bottom-left
-        vec3(-0.5f, -0.5f, -0.5f), // top-right
-        vec3(-0.5f, -0.5f,  0.5f), // bottom-right
-        // Top face
-        vec3(-0.5f,  0.5f, -0.5f), // top-left
-        vec3( 0.5f,  0.5f, -0.5f), // top-right
-        vec3( 0.5f,  0.5f,  0.5f), // bottom-right                 
-        vec3( 0.5f,  0.5f,  0.5f), // bottom-right
-        vec3(-0.5f,  0.5f,  0.5f), // bottom-left  
-        vec3(-0.5f,  0.5f, -0.5f) // top-left              
-    );
-
-    vec2 uv[] = vec2[](
-        // Back face
-        vec2(0.0f, 0.0f), // Bottom-left
-        vec2(1.0f, 0.0f), // bottom-right    
-        vec2(1.0f, 1.0f), // top-right              
-        vec2(1.0f, 1.0f), // top-right
-        vec2(0.0f, 1.0f), // top-left
-        vec2(0.0f, 0.0f), // bottom-left                
-        // Front face
-        vec2(0.0f, 0.0f), // bottom-left
-        vec2(1.0f, 1.0f), // top-right
-        vec2(1.0f, 0.0f), // bottom-right        
-        vec2(1.0f, 1.0f), // top-right
-        vec2(0.0f, 0.0f), // bottom-left
-        vec2(0.0f, 1.0f), // top-left        
-        // Left face
-        vec2(1.0f, 0.0f), // top-right
-        vec2(0.0f, 1.0f), // bottom-left
-        vec2(1.0f, 1.0f), // top-left       
-        vec2(0.0f, 1.0f), // bottom-left
-        vec2(1.0f, 0.0f), // top-right
-        vec2(0.0f, 0.0f), // bottom-right
-        // Right face
-        vec2(1.0f, 0.0f), // top-left
-        vec2(1.0f, 1.0f), // top-right      
-        vec2(0.0f, 1.0f), // bottom-right          
-        vec2(0.0f, 1.0f), // bottom-right
-        vec2(0.0f, 0.0f), // bottom-left
-        vec2(1.0f, 0.0f), // top-left
-        // Bottom face          
-        vec2(0.0f, 1.0f), // top-right
-        vec2(1.0f, 0.0f), // bottom-left
-        vec2(1.0f, 1.0f), // top-left        
-        vec2(1.0f, 0.0f), // bottom-left
-        vec2(0.0f, 1.0f), // top-right
-        vec2(0.0f, 0.0f), // bottom-right
-        // Top face
-        vec2(0.0f, 1.0f), // top-left
-        vec2(1.0f, 1.0f), // top-right
-        vec2(1.0f, 0.0f), // bottom-right                 
-        vec2(1.0f, 0.0f), // bottom-right
-        vec2(0.0f, 0.0f), // bottom-left  
-        vec2(0.0f, 1.0f)  // top-left              
-    );
-
-    layout(std140) uniform cubes {
-        mat4 model[500];
-        mat4 size[500];
-        ivec4 parents[500];
-    };
-
-    int getParent(int idx) {
-        ivec4 group = parents[idx/4];
-        if (idx % 4 == 0) return group.x;
-        if (idx % 4 == 1) return group.y;
-        if (idx % 4 == 2) return group.z;
-        if (idx % 4 == 3) return group.w;
-    }
-
-    mat4 getModel(int idx) {
-        mat4 base = model[idx];
-        int parent = getParent(idx);
-        
-        int max = 20;
-        while (max >= 0 && parent != 0) {
-            max--;
-            mat4 p = model[parent - 1];
-            base = p * base; 
-
-            idx = parent - 1;
-            parent = getParent(idx);
-        }
-
-        return base;
-    }
-
-    void main() {
-        mat4 model = getModel(gl_VertexID/36) * size[gl_VertexID/36];
-        gl_Position = pv * model * vec4(verts[gl_VertexID % 36], 1.0);
-        VertColor = vec4(uv[gl_VertexID % 36], 0.0, 1.0);
-
-        //VertColor = vec4(float(getParent(gl_VertexID / 36)));
-        //VertColor.w = 1.0;
-    }`;
-
-// Fragment shader program
-var FSHADER_SOURCE = `#version 300 es
-    precision mediump float;
-    in vec4 VertColor;
-
-    out vec4 fragColor;
-
-    void main() {
-        fragColor = VertColor;
-    }`;
-
-
 var ctx = helpers.InitGL("webgl", true);
 var gl = ctx.gl;
 
 var animal = {
-    cubes: []
+    cubes: [],
+    decor: [],
 };
+
+const StringToHandle = {};
 
 var handles = {};
 var camera = {
@@ -158,12 +15,13 @@ var camera = {
     vel: new Vector3(),
 };
 
-function addCube(parent, size, pos, anchor) {
+function addCube(parent, size, pos, color, anchor) {
     const handle = animal.cubes.length;
     animal.cubes.push({
         pos: new Vector3(pos),
         anchor: new Vector3(anchor).mul(-1),
         size: new Vector3(size),
+        color: color,
         rot: new Vector3([0, 0, 0]),
         parent: parent ? parent + 1 : 0,
     });
@@ -171,67 +29,172 @@ function addCube(parent, size, pos, anchor) {
     return handle;
 }
 
+function addDecor(parent, size, pos, rot, anchor, tex) {
+    const handle = animal.decor.length;
+    animal.decor.push({
+        pos: pos,
+        anchor: new Vector3(anchor).mul(-1),
+        size: size,
+        rot: new Vector3(rot),
+        tex: tex,
+        parent: parent ? parent + 1 : 0,
+    });
+
+    return handle;
+}
+
+const WHITE = [1, 1, 1];
+const ORANGE = [1, 0.4, 0];
+
 function main() {
-    var prog = helpers.CompileShaders(ctx, VSHADER_SOURCE, FSHADER_SOURCE);
-    var uniform = helpers.CreateUniformBuffer(ctx, prog, 0);
+    var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
+    var decor_prog = helpers.CompileShaders(ctx, decor_shader.vert, decor_shader.frag);
+    //var prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
+    var cubes = helpers.CreateUniformBuffer(ctx, cube_prog, 0);
+    var decor = helpers.CreateUniformBuffer(ctx, decor_prog, 0);
+
+    var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
+
+    helpers.BindUniformBuffer(ctx, decor_prog, cubes, 1);
 
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CW);
     gl.enable(gl.DEPTH_TEST);
 
-    addCube(0, [10, 0.5, 10], [0, -4, 0], [0, 0, 0]);
-    handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], [0,0,0]);
-    handles.neck = addCube(handles.body, [1, 0.8, 0.8], [0.5, 0.40, 0], [-0.5, 0, 0.0]);
-    handles.head = addCube(handles.neck, [0.5, 1, 1.0], [0.5, 0, 0], [-0.25, -0.1, 0]);
-    handles.snout = addCube(handles.head, [0.8, 0.8, 0.5], [0.5, 0, 0], [0, 0, 0]);
+    addCube(0, [10, 0.5, 10], [0, -4, 0], WHITE, [0, 0, 0]);
+    handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], ORANGE, [0, 0, 0]);
+    handles.neck = addCube(handles.body, [1, 0.8, 0.8], [0.5, 0.40, 0], ORANGE, [-0.5, 0, 0.0]);
+    handles.head = addCube(handles.neck, [0.5, 1, 1.0], [0.5, 0, 0], ORANGE, [-0.25, -0.1, 0]);
+    handles.snout = addCube(handles.head, [0.5, 0.6, 0.5], [0.5, -0.2, 0], ORANGE, [0, 0, 0]);
 
-    handles.rShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, 0.5], [0.0, 0.3, -0.0]);
-    handles.frLeg = addCube(handles.rShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], [0.0, 0.4, 0.0]);
-    handles.frFoot = addCube(handles.frLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], [-0.1, 0.15, 0.0]);
 
-    handles.lShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, -0.5], [0.0, 0.3, -0.0]);
-    handles.flLeg = addCube(handles.lShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], [0.0, 0.4, 0.0]);
-    handles.flFoot = addCube(handles.flLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], [-0.1, 0.15, 0.0]);
+    handles.rEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, 0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, 1, 1]);
+    handles.lEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, -0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, -1, 1]);
 
-    handles.rear = addCube(handles.body, [1.4, 1.35, 1], [-1, 0.75, 0], [0.7, 0.7, 0]);
+    handles.rShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, 0.5], ORANGE, [0.0, 0.3, -0.0]);
+    handles.frLeg = addCube(handles.rShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
+    handles.frFoot = addCube(handles.frLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
 
-    handles.rHip = addCube(handles.rear, [0.8, 1.4, 0.3], [0, 0, 0.5], [0, 0.3, 0]);
-    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], [0, 0.5, 0]);
-    handles.rlFoot = addCube(handles.rlLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], [-0.1, 0.15, 0]);
+    handles.lShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, -0.5], ORANGE, [0.0, 0.3, -0.0]);
+    handles.flLeg = addCube(handles.lShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
+    handles.flFoot = addCube(handles.flLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
 
-    handles.lHip = addCube(handles.rear, [0.8, 1.4, 0.3], [0, 0, -0.5], [0, 0.3, 0]);
-    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], [0, 0.5, 0]);
-    handles.llFoot = addCube(handles.llLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], [-0.1, 0.15, 0]);
+    handles.rear = addCube(handles.body, [2.5, 1.35, 1], [-1, 0.75, 0], ORANGE, [1.25, 0.7, 0]);
+
+    handles.rHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, 0.5], ORANGE, [0, 0.3, 0]);
+    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.rlFoot = addCube(handles.rlLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
+
+    handles.lHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, -0.5], ORANGE, [0, 0.3, 0]);
+    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.llFoot = addCube(handles.llLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
 
     handles.tail = [];
-    handles.tail[0] = addCube(handles.rear, [0.3, 0.3, 0.3], [-0.7, 0.575, 0], [0.1, 0, 0]);
+    handles.tail[0] = addCube(handles.rear, [0.3, 0.3, 0.3], [-1.3, 0.555, 0], ORANGE, [0.1, 0, 0]);
 
-    for (var i = 1; i < 8; i++) {
+    for (var i = 1; i < 15; i++) {
         var old = handles.tail[i - 1];
-        handles.tail.push(addCube(old, [0.3, 0.3, 0.3], [-0.15, 0, 0], [0.15, 0, 0]));
+        handles.tail.push(addCube(old, [0.3, 0.3, 0.3], [-0.15, 0, 0], i % 2 ? WHITE : ORANGE, [0.15, 0, 0]));
     }
+
+    handles.lEar = addCube(handles.head, [0.07, 0.3, 0.15], [0.01, 0.5, 0.3], ORANGE, [0.0, 0.0, 0.0]);
+    handles.lEar2 = addCube(handles.head, [0.1, 0.2, 0.2], [0.0, 0.5, 0.3], ORANGE, [0.0, 0.0, 0.0]);
+    handles.lEarIn = addCube(handles.head, [0.09, 0.19, 0.15], [0.01, 0.5, 0.3], WHITE, [0.0, 0.0, 0.0]);
+
+    handles.rEar = addCube(handles.head, [0.07, 0.3, 0.15], [0.01, 0.5, -0.3], ORANGE, [0.0, 0.0, 0.0]);
+    handles.rEar2 = addCube(handles.head, [0.1, 0.2, 0.2], [0.0, 0.5, -0.3], ORANGE, [0.0, 0.0, 0.0]);
+    handles.rEarIn = addCube(handles.head, [0.09, 0.19, 0.15], [0.01, 0.5, -0.3], WHITE, [0.0, 0.0, 0.0]);
+
+    //used to move the entire model
+    handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
+    animal.cubes[handles.body].parent = handles.core + 1;
+
+    StringToHandle["body"] = handles.body;
+    StringToHandle["rear"] = handles.rear;
+    StringToHandle["neck"] = handles.neck;
+    StringToHandle["head"] = handles.head;
+    StringToHandle["rshoulder"] = handles.rShoulder;
+    StringToHandle["lshoulder"] = handles.lShoulder;
+    StringToHandle["frleg"] = handles.frLeg;
+    StringToHandle["flleg"] = handles.flLeg;
+    StringToHandle["frfoot"] = handles.frFoot;
+    StringToHandle["flfoot"] = handles.flFoot;
+    StringToHandle["rhip"] = handles.rHip;
+    StringToHandle["lhip"] = handles.lHip;
+    StringToHandle["brleg"] = handles.rlLeg;
+    StringToHandle["blleg"] = handles.llLeg;
+    StringToHandle["brfoot"] = handles.rlFoot;
+    StringToHandle["blfoot"] = handles.llFoot;
+    StringToHandle["tail"] = handles.tail[0];
 
     ctx.canvas.onmousemove = function(ev) { onMouseMove(ev); };
     ctx.canvas.onwheel = function(ev) { onMouseWheel(ev); };
+    ctx.canvas.onclick = function(ev) {
+        if (!ev.shiftKey) {
+            return;
+        }
+
+        if (state == "walk") {
+            next = "sit";
+        }
+
+        if (state == "sit-idle") {
+            next = "sit-rev";
+        }
+    };
+
+    document.getElementById("output-pose").onclick = printFrame;
+    document.getElementById("reset").onclick = function() {
+        document.getElementById("xrot").value = 0;
+        document.getElementById("yrot").value = 0;
+        document.getElementById("zrot").value = 0;
+    };
+
+    document.getElementById("selected-part").onchange = function() {
+        const handle = StringToHandle[document.getElementById("selected-part").value];
+        const rot = animal.cubes[handle].rot;
+        document.getElementById("xrot").value = rot.elements[0];
+        document.getElementById("yrot").value = rot.elements[1];
+        document.getElementById("zrot").value = rot.elements[2];
+    };
+
+    console.log(handles);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    tick(0, prog, uniform);
+    tick(0, cube_prog, decor_prog, cubes, decor);
 }
 
-function blendCube(handle, t, rot1, pos1, rot2, pos2) {
-    var pdiff = new Vector3();
-    pdiff.add(pos2);
-    pdiff.sub(pos1);
-    pdiff.mul(t);
+async function printFrame() {
+    var frame = [];
+    const handles = Object.values(StringToHandle);
 
+    for (var i = 0; i < handles.length; i++) {
+        frame.push({
+            handle: handles[i],
+            rot: Array.from(animal.cubes[handles[i]].rot.elements)
+        });
+    }
+
+    await navigator.clipboard.write([
+        new ClipboardItem({ ["text/plain"]: JSON.stringify(frame) + "," })
+    ]);
+
+    window.alert("Copied JSON!");
+}
+
+function blendCube(handle, t, rot1, rot2) {
     var rdiff = new Vector3();
     rdiff.add(rot2);
     rdiff.sub(rot1);
     rdiff.mul(t);
 
-
-    animal.cubes[handle].pos = pos1.add(pdiff);
     animal.cubes[handle].rot = rot1.add(rdiff);
+}
+
+function blendFrame(t, frame1, frame2) {
+    for (var i = 0; i < frame1.length; i++) {
+        blendCube(frame1[i].handle, t, new Vector3(frame1[i].rot), new Vector3(frame2[i].rot));
+    }
 }
 
 function onMouseWheel(ev) {
@@ -250,9 +213,90 @@ function onMouseMove(ev) {
     camera.vel.elements[0] = dy * 0.5;
 }
 
+var t_total = 0;
+
+var state = "walk";
+var next = "walk";
+var hold = false;
+function updatePose(dt) {
+    const frame_toggle = document.getElementById("frame-toggle").checked;
+    var anim_name = document.getElementById("anim").value;
+
+    const dynamic_toggle  = document.getElementById("dynamic-toggle").checked;
+    if (dynamic_toggle) {
+        anim_name = state;
+    }
+
+    const animation = animation_data[anim_name];
+    if (frame_toggle) {
+        //pose based on frame
+        const index = document.getElementById("frame-num").value % animation.anim.length;
+        const frame1 = animation.anim[index];
+        const frame2 = animation.anim[(index + 1) % animation.anim.length];
+
+        //no interpolation
+        blendFrame(0, frame1, frame2);
+
+        return;
+    }
+
+    const play_toggle = document.getElementById("play-toggle").checked;
+
+    if (play_toggle) {
+        //wiggle tail
+        for (var i = 0; i < handles.tail.length; i++) {
+            animal.cubes[handles.tail[i]].rot.elements[1] = 10 * Math.sin(time * 0.001 + i * Math.PI/8);
+            animal.cubes[handles.tail[i]].rot.elements[0] = 10 * Math.sin(10 + time * 0.001 + i * Math.PI/8);
+        }
+
+        //interpolate frames
+        const t_frac = t_total % 1;
+        const t_int = (t_total - t_frac + animation.anim.length) % animation.anim.length;
+
+        const index = t_int;
+        const frame1 = animation.anim[index];
+        var frame2 = animation.anim[(index + 1) % animation.anim.length];
+
+        blendFrame(t_frac, frame1, frame2);
+        animal.cubes[handles.core].pos.elements[1] = animation.bob * 0.05 * Math.sin(Math.PI * 2 * t_total / 4);
+
+        t_total += animation.speed * 1/12;
+        t_total = (t_total + animation.anim.length) % animation.anim.length;
+
+        if (index == animation.anim.length - 1 && dynamic_toggle && !hold) {
+            hold = true;
+            state = next;
+            if (state == "sit") {
+                next = "sit-idle";
+            }
+            if (state == "sit-rev") {
+                next = "walk";
+            }
+            t_total = 0;
+        }
+        if (index != 0) {
+            hold = false;
+        }
+
+        return;
+    }
+
+    const body_part = document.getElementById("selected-part").value;
+    const x = document.getElementById("xrot").value;
+    const y = document.getElementById("yrot").value;
+    const z = document.getElementById("zrot").value;
+
+    const handle = StringToHandle[body_part];
+
+    animal.cubes[handle].rot.elements[0] = x;
+    animal.cubes[handle].rot.elements[1] = y;
+    animal.cubes[handle].rot.elements[2] = z;
+
+}
+
 var time = 0;
 var avg_dt = 0;
-function tick(curr_time, prog, uniform) {
+function tick(curr_time, prog, decor_prog, cubes, decor) {
     dt = curr_time - time;
     if (dt > 2000) dt = 2000;
     if (dt == 0) dt = 0.0001
@@ -264,32 +308,33 @@ function tick(curr_time, prog, uniform) {
     camera.rot.add(camera.vel);
     camera.vel.mul(0.9);
 
-    render(prog, uniform);
+    render(prog, decor_prog, cubes, decor);
 
+    updatePose(dt);
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {
         const dt = (endTime - startTime) / 1000; //dt is in seconds
-        avg_dt = avg_dt * 0.999 + 0.001 * dt; //blend dt to get average
+        avg_dt = avg_dt * 0.95 + 0.05 * dt; //blend dt to get average
 
         //convert sec to ms, then round to 2 places
-        document.getElementById("frame").innerText = `UpdateTime: ${Math.round(avg_dt * 1000 * 100) / 100} ms`; 
+        document.getElementById("frame").innerText = `UpdateTime: ${Math.round(avg_dt * 1000 * 100) / 100} ms`;
 
         //calculate fps, then round to 2 places
-        document.getElementById("fps").innerText = `FPS: ${Math.round((1.0/avg_dt) * 100) / 100}`; 
+        document.getElementById("fps").innerText = `FPS: ${Math.round((1.0 / avg_dt) * 100) / 100}`;
     }
 
     requestAnimationFrame((dt) => {
-        tick(dt, prog, uniform);
+        tick(dt, prog, decor_prog, cubes, decor);
     })
 }
 
 
-function render(prog, uniform) {
+function render(prog, decor_prog, cubes, decor) {
     var mat = new Matrix4();
 
     mat.setIdentity();
-    mat.frustum(-1, 1, -1, 1, 1.0, 10000.0);
+    mat.perspective(90, 1, 0.01, 1000.0);
 
     mat.translate(0, 0, -camera.dist);
     mat.rotate(camera.rot.elements[0], 1, 0, 0);
@@ -297,9 +342,13 @@ function render(prog, uniform) {
     mat.rotate(camera.rot.elements[2], 0, 0, 1);
 
     helpers.SetUniform(ctx, prog, 0, mat.elements);
+    helpers.SetUniform(ctx, decor_prog, 0, mat.elements);
+    //mat.invert();
+    //helpers.SetUniform(ctx, prog, 1, mat.elements);
 
     var sizes = [];
     var models = [];
+    var colors = [];
     var parents = [];
     for (var i = 0; i < animal.cubes.length; i++) {
         const pos = animal.cubes[i].pos;
@@ -307,6 +356,7 @@ function render(prog, uniform) {
         const size = animal.cubes[i].size;
         const rot = animal.cubes[i].rot;
         const parent = animal.cubes[i].parent;
+        const color = animal.cubes[i].color;
 
         const model = new Matrix4();
         model.setTranslate(pos.elements[0], pos.elements[1], pos.elements[2]);
@@ -325,12 +375,55 @@ function render(prog, uniform) {
         var elements = Array.from(model.elements)
         models.push(...elements);
         parents.push(parent);
+
+        colors.push(...color);
+        colors.push(1.0);
     }
 
-    helpers.UploadUniform(ctx, uniform, 0, 0, models);
-    helpers.UploadUniform(ctx, uniform, 0, 1, sizes);
-    helpers.UploadUniform(ctx, uniform, 1, 2, parents);
+    helpers.UploadUniform(ctx, cubes, 0, 0, models);
+    helpers.UploadUniform(ctx, cubes, 0, 1, sizes);
+    helpers.UploadUniform(ctx, cubes, 0, 2, colors);
+    helpers.UploadUniform(ctx, cubes, 1, 3, parents);
+
+    models = [];
+    sizes = [];
+    texs = [];
+    parents = []; 
+    for (var i = 0; i < animal.decor.length; i++) {
+        const pos = animal.decor[i].pos;
+        const anchor = animal.decor[i].anchor;
+        const size = animal.decor[i].size;
+        const rot = animal.decor[i].rot;
+        const parent = animal.decor[i].parent;
+        const tex = animal.decor[i].tex;
+
+        const model = new Matrix4();
+        model.setTranslate(pos[0], pos[1], pos[2]);
+
+        model.rotate(rot.elements[0], 1, 0, 0);
+        model.rotate(rot.elements[1], 0, 1, 0);
+        model.rotate(rot.elements[2], 0, 0, 1);
+        model.translate(anchor.elements[0], anchor.elements[1], anchor.elements[2]);
+
+        var size_matrix = new Matrix4();
+        size_matrix.setScale(size[0], size[1], 1);
+
+        const msize = Array.from(size_matrix.elements);
+        sizes.push(...msize);
+
+        var elements = Array.from(model.elements)
+        models.push(...elements);
+        parents.push(parent);
+
+        texs.push(...tex);
+    }
+
+    helpers.UploadUniform(ctx, decor, 0, 0, models);
+    helpers.UploadUniform(ctx, decor, 0, 1, sizes);
+    helpers.UploadUniform(ctx, decor, 0, 2, texs);
+    helpers.UploadUniform(ctx, decor, 1, 3, parents);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     helpers.Draw(ctx, prog, 36 * animal.cubes.length);
+    helpers.Draw(ctx, decor_prog, 6 * animal.decor.length);
 }

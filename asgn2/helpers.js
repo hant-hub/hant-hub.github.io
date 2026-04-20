@@ -149,6 +149,7 @@ var helpers = function() {
         for (var i = 0; i < numUniforms; i++) {
             const uinfo = gl.getActiveUniform(program, i);
             const location = gl.getUniformLocation(program, uinfo.name);
+            console.log(uinfo);
             if (location) {
                 uniforms.push({
                     location: location,
@@ -256,6 +257,12 @@ var helpers = function() {
         return out;
     }
 
+    function BindUniformBuffer(ctx, prog, buffer, idx) {
+        var gl = ctx.gl;
+        gl.uniformBlockBinding(prog.p, idx, buffer.bindpoint);
+    }
+
+
     function UploadUniformBuffer(ctx, buffer, data) {
         var gl = ctx.gl;
 
@@ -291,7 +298,6 @@ var helpers = function() {
                 break;
         }
 
-        //console.log("Uniform Offset: " + buffer.offsets[idx]);
         gl.bufferSubData(gl.UNIFORM_BUFFER, 
             buffer.offsets[idx],
             buf
@@ -397,6 +403,55 @@ var helpers = function() {
         return 0;
     }
 
+    function LoadTexture(ctx, file) {
+        var gl = ctx.gl;
+
+        /*
+            Borrowed from the MDN docs
+        */
+        
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 1;
+        const height = 1;
+        const border = 0;
+        const srcFormat = gl.RGBA;
+        const srcType = gl.UNSIGNED_BYTE;
+        const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            level,
+            internalFormat,
+            width,
+            height,
+            border,
+            srcFormat,
+            srcType,
+            pixel,
+        );
+
+        var img = new Image();
+        img.src = file;
+        img.onload = () => {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                level,
+                internalFormat,
+                srcFormat,
+                srcType,
+                img,
+            );
+
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+
+        return texture;
+    }
+
     function DrawBuffer(ctx, prog, buffer) {
         var gl = ctx.gl;
 
@@ -428,7 +483,9 @@ var helpers = function() {
     return {
         InitGL: InitGL,
         CompileShaders: CompileShaders,
+        LoadTexture: LoadTexture,
         CreateUniformBuffer: CreateUniformBuffer,
+        BindUniformBuffer: BindUniformBuffer,
         CreateVertBuffer: CreateVertBuffer,
         ResizeVertBuffer: ResizeVertBuffer,
         PushVerts: PushVerts,

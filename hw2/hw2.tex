@@ -1,0 +1,652 @@
+\documentclass{article} 
+
+\usepackage{mdframed}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+
+\title{CSE160 Homework 2}
+\author{Elijah Hantman}
+
+%\renewcommand{\spn}[1]{\langle #1 \rangle}
+
+
+\begin{document}
+    \maketitle
+
+    {\large Part 1}
+    \begin{enumerate}
+        \item Using the labels Translate, Rotation, Scale, or Reflect, label the transformation of
+            point p when multiplied by matrix $M(p' = Mp)$:
+
+            \begin{enumerate}
+                \item 
+                    \begin{displaymath}
+                        M = 
+                        \begin{bmatrix}
+                            0 & -1\\ 
+                            1 & 0
+                        \end{bmatrix}
+                    \end{displaymath}
+
+                    \begin{mdframed}
+                        This is a rotation by 90 degrees.
+                    \end{mdframed}
+                \item 
+                    \begin{displaymath}
+                        M =
+                        \begin{bmatrix}
+                            \frac{\sqrt{2}}{2} & \frac{\sqrt{2}}{2}\\ 
+                            -\frac{\sqrt{2}}{2} & \frac{\sqrt{2}}{2}
+                        \end{bmatrix}
+                    \end{displaymath}
+                    \begin{mdframed}
+                       This is another rotation, by 45 degrees. 
+                    \end{mdframed}
+                \item 
+                    \begin{displaymath}
+                        M =
+                        \begin{bmatrix}
+                            2 & 0 & 0 & 0\\
+                            0 & 4 & 0 & 0\\
+                            0 & 0 & 2 & 0\\
+                            0 & 0 & 0 & 1\\
+                        \end{bmatrix}
+                    \end{displaymath}
+                    \begin{mdframed}
+                        This is a non uniform scaling.
+                    \end{mdframed}
+                \item 
+                    \begin{displaymath}
+                        M = 
+                        \begin{bmatrix}
+                            -1 & 0\\ 
+                            0 & 1
+                        \end{bmatrix}
+                    \end{displaymath}
+                    \begin{mdframed}
+                        This is a reflection about $e_2$,
+                        meaning a vector $v = ae_1 + be_2$
+                        will be mapped to $v = -ae_1 + be_2$.
+                    \end{mdframed}
+
+                \item 
+                    \begin{displaymath}
+                        M =
+                        \begin{bmatrix}
+                            1 & 0 & 3\\ 
+                            0 & 1 & 2\\
+                            0 & 0 & 1
+                        \end{bmatrix}
+                    \end{displaymath}
+                    \begin{mdframed}
+                        In a 2D projective space, this would
+                        correspond to a translation by
+                        $(3,2)$.
+                    \end{mdframed}
+            \end{enumerate}
+
+        \item Find the matrix for a $120\circ$ rotation about the axis defined by the vector $r = (1,1,0)$.
+            \begin{mdframed}
+                The matrix can be derived via the product of a rotation to put the axis onto one of
+                the bases, then a basis aligned rotation, followed by the inverse of the original rotation.
+
+                Using a tool to calculate the rotation matrix we get:
+
+                \begin{displaymath}
+                    M = 
+                    \begin{bmatrix}
+                        0.2500000&  0.7500000&  0.6123725\\
+                        0.7500000&  0.2500000& -0.6123725\\
+                        -0.6123725&  0.6123725& -0.5000000 
+                    \end{bmatrix}
+                \end{displaymath}
+
+                Alternative methods involve using quaternions,
+                then converting to a matrix, or you could decompose
+                the rotation using euler angles. Ie: first doing
+                a rotation to put the axis on the basis, then doing
+                a rotation, then undoing it.
+            \end{mdframed}
+
+        \item Match the following 2D homogeneous matrices to the transformations in the image:
+            \begin{mdframed}
+               1 goes with matrix b.\\ 
+               2 goes with matrix a\\
+               3 goes with matrix c
+            \end{mdframed}
+
+        \item Describe a sequence of Translate(x,y), Rotate(degrees), and/or Scale (by a value
+            of ) that when multiplied describe the below transformation to go from the ’Before’
+            to ’After’.
+
+            \begin{mdframed}
+                Translate (-1, 0)\\
+                Rotate(45)
+                
+                \vspace{10pt}
+
+                I can't tell if the after image has
+                a scale applied, so I didn't include that,
+                but if I did, it would have to happen first.
+            \end{mdframed}
+
+            \break
+        \item 
+            \begin{enumerate}
+                \item Describe (using a sequence of (3 x 3) matrix multiplications) the transformations
+needed to transform the triangle from A to B in the figure below:
+
+                \begin{mdframed}
+                    \begin{displaymath}
+                        \begin{bmatrix}
+                           x'\\ 
+                           y'\\
+                           z'
+                        \end{bmatrix}
+                        =
+                        \begin{bmatrix}
+                            1 & 0 & -7\\ 
+                            0 & 1 & 5\\
+                            0 & 0 & 1
+                        \end{bmatrix}
+                        \begin{bmatrix}
+                            2 & 0 & 0\\ 
+                            0 & -1 & 0\\
+                            0 & 0 & 1
+                        \end{bmatrix}
+                        \begin{bmatrix}
+                         x\\   
+                         y\\
+                         z
+                        \end{bmatrix}
+                    \end{displaymath}
+
+                    Something to note is that I do this
+                    in 2 steps. First I scale and reflect
+                    the triangle, then I translate it into
+                    position. I also do not forget that scaling
+                    far from the origin causes the position to
+                    shift.
+                \end{mdframed}
+
+            \item Using the transformations found in part (a), multiply the following points with
+                the matrix.
+
+                \begin{displaymath}
+                    p_1 = \begin{bmatrix}
+                       4\\ 
+                       1
+                    \end{bmatrix}
+                    \quad
+                    p_2 =
+                    \begin{bmatrix}
+                       4\\ 
+                       3
+                    \end{bmatrix}
+                \end{displaymath}
+
+                \begin{mdframed}
+                    \begin{displaymath}
+                        p_1 = (4,1)
+                    \end{displaymath} 
+                    \begin{displaymath}
+                        \to (8,-1)
+                    \end{displaymath}
+                    \begin{displaymath}
+                        \to (1, 4)
+                    \end{displaymath}
+
+                    \begin{displaymath}
+                        p_2 = (4,3)
+                    \end{displaymath}
+                    \begin{displaymath}
+                        \to (8, -3)
+                    \end{displaymath}
+                    \begin{displaymath}
+                        \to (1, 2)
+                    \end{displaymath}
+                \end{mdframed}
+            \end{enumerate}
+    \end{enumerate}
+
+    \break
+    {\large Part 2}
+    \begin{enumerate}
+        \item Define uniform, attribute and varying variables
+            \begin{mdframed}
+                Uniform variables are variables which are
+                constant between vertex shader invocations.
+
+                On the other hand attribute and varying variables
+                contain the data from vertices, and interpolated
+                vertex shader outputs respectively.
+
+                In more modern GLSL uniforms still exist since
+                the idea of simply making a single value accessible
+                across all shader executions is very useful.
+
+                On the other hand in order to make the API more
+                descriptive attribute and varying variables
+                are simply labeled as "in" and "out" variables.
+
+                This means that the variables are more clearly
+                defined in regards to the shader they appear in.
+                For example, a vertex shader will output to
+                an "out" variable, which would be labeled
+                varying in GLSL 1.
+
+                And a fragment shader will take as input an
+                "in" variable rather than a varying variable.
+            \end{mdframed}
+
+        \item What type is the shader and describe its function?
+            \begin{enumerate}
+                \item
+
+                    \begin{lstlisting}[language=C]
+attribute vec2 a_Position;
+main() {
+  gl_Position = vec4(0.5 * a_Position, 0.0, 1.0);
+} 
+                    \end{lstlisting}
+
+                    \begin{mdframed}
+                        This is a vertex shader. We can tell by
+                        the use of "attribute" to declare vertex
+                        data, as well as "gl\_Position" which
+                        is a vertex shader builtin which
+                        is used to set the position of the
+                        vertex for rasterization.
+                    \end{mdframed}
+
+                \item 
+                    \begin{lstlisting}[language=c]
+main() {
+  gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+} 
+                    \end{lstlisting}
+
+                    \begin{mdframed}
+                       This is a fragment shader. This
+                       is obvious by the usage of
+                       "gl\_FragColor" as well as the
+                       lack of attribute declarations.
+                    \end{mdframed}
+            \end{enumerate}
+
+            \break
+        \item Using linear interpolation, calculate the color of the following points that are on the
+            line defined by the 2D points p1 = [3,5] with color [255,0,0] and p2 = [10, 5] with
+            color [0,0,255].
+            \begin{enumerate}
+                \item $[4.8, 5]$
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            [4.8, 5] = t[10.5] + (1-t)[3, 5]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            [4.8, 5] = tp_2 + p_1 - tp_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            [4.8, 5] = t(p_2 - p_1) + p_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            [1.8, 0] = t(p_2 - p_1)
+                        \end{displaymath}
+                        \begin{displaymath}
+                            [1.8, 0] = t([7,0])
+                        \end{displaymath}
+                        \begin{displaymath}
+                            t \approx 0.25
+                        \end{displaymath}
+
+                        Now we lerp the colors.
+
+                        \begin{displaymath}
+                            c = t(c_2 - c_1) + c_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c = t([-255, 0, 255]) + [255, 0, 0]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c \approx [192, 0, 64]
+                        \end{displaymath}
+                    \end{mdframed}
+
+                \item $[7.5, 5]$
+                    \begin{mdframed}
+
+                        Since most of the steps in the previous
+                        problem didn't require using the
+                        point we can skip most of the steps.
+
+                        \begin{displaymath}
+                            [4.5,0] = t([7,0])
+                        \end{displaymath}
+                        \begin{displaymath}
+                            t \approx 0.64
+                        \end{displaymath}
+
+                        Now to lerp the colors
+                        \begin{displaymath}
+                            c = t([-255, 0, 255]) + [255, 0, 0]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c \approx [92,0,163]
+                        \end{displaymath}
+                    \end{mdframed}
+                    \break
+                \item $[9, 5]$
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            [6, 0] = t([7,0])
+                        \end{displaymath}
+                        \begin{displaymath}
+                            t \approx 0.86
+                        \end{displaymath}
+
+                        Next the colors:
+
+                        \begin{displaymath}
+                            c = t([-255, 0, 255]) + [255, 0, 0]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c \approx [36,0,219]
+                        \end{displaymath}
+                        
+                    \end{mdframed}
+            \end{enumerate}
+        \item Using barycentric coordinates, calculate the color for each of the following points
+            inside the triangle defined by points $p_1 = [0,0,0]$, $p_2 = [3,5,0]$ and $p_3 = [6,0,0]$ with
+            respective RGB colors $c_1 = [255, 0, 0]$, $c_2 = [0, 255, 0]$, $c_3 = [0, 0, 255]$.
+
+            \begin{enumerate}
+                \item $[1,1,0]$
+                    \begin{mdframed}
+                        To calculate barycentric coordinates you do,
+                        \begin{displaymath}
+                            v_1 = p_2 - p_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            v_2 = p_3 - p_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            v_3 = [1,1,0] - p_1
+                        \end{displaymath}
+                        \begin{displaymath}
+                            A = |v_1 \times v_2|
+                        \end{displaymath}
+                        \begin{displaymath}
+                            b_2 = |v_3 \times v_2|
+                        \end{displaymath}
+                        \begin{displaymath}
+                            b_3 = |v_3 \times v_1|
+                        \end{displaymath}
+                        \begin{displaymath}
+                            b_1 = 1 - (b_2 + b_3)
+                        \end{displaymath}
+
+                        Then to get the color we do
+                        $b_1c_1 + b_2 c_2 + b_3 c_3$.
+
+                        \begin{displaymath}
+                            b = [11/15, 1/5, 1/15]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c = [187, 51, 17]
+                        \end{displaymath}
+                    \end{mdframed}
+
+                \item $[3,4,0]$
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            b = [1/10, 4/5, 1/10]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c = [26, 204, 26]
+                        \end{displaymath}
+                    \end{mdframed}
+                \item $[5, 0.25, 0]$.
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            b = [0.14, 0.05, 0.81]
+                        \end{displaymath}
+                        \begin{displaymath}
+                            c = [36, 13, 207]
+                        \end{displaymath}
+                    \end{mdframed}
+            \end{enumerate}
+        \item Calculate the RGB color value for point P in the diagram below using bilinear
+            interpolation. Show the intermediate values that you compute for interpolating
+            along one of the two axes. The colors of the points A, B, C and D are the following:
+
+            \begin{displaymath}
+                A = RGB(0,0,0) \qquad B = RGB(200, 200, 200)
+            \end{displaymath}
+            \begin{displaymath}
+                C = RGB(200, 0, 0) \qquad D = RGB(200, 0, 0)
+            \end{displaymath}
+            \begin{displaymath}
+                A = (14,21) \qquad B = (15,21)
+            \end{displaymath}
+            \begin{displaymath}
+                C = (14,20) \qquad D = (15,20)
+            \end{displaymath}
+
+            \begin{displaymath}
+                P = (14,75, 20.5)
+            \end{displaymath}
+
+            \begin{mdframed}
+                So we can instantly see that the lerp
+                $C \to D$ will always give the result
+                $RGB(200, 0, 0)$. This follows since
+                $C = D$.
+
+                Next we need to interpolate $A \to B$.
+
+                \begin{displaymath}
+                    14.75 = t(15 - 14) + 14
+                \end{displaymath}
+                \begin{displaymath}
+                    0.75 = t
+                \end{displaymath}
+
+                Then the color.
+
+                \begin{displaymath}
+                    c = 0.75(RGB(200,200,200) - RGB(0,0,0)) + 
+                    RGB(0,0,0)
+                \end{displaymath}
+                \begin{displaymath}
+                    c = RGB(150, 150, 150)
+                \end{displaymath}
+
+                Next we interpolate vertically. Since the quad
+                is axis aligned, we can just use the $y$ coordinate.
+
+                \begin{displaymath}
+                    20.5 = t(21 - 20) + 20
+                \end{displaymath}
+                \begin{displaymath}
+                    0.5 = t
+                \end{displaymath}
+
+                Next the interpolation
+
+                \begin{displaymath}
+                    c = 0.5(RGB(150, 150, 150) - RGB(200, 0, 0)) + RGB(200, 0, 0)
+                \end{displaymath}
+                \begin{displaymath}
+                    c = 0.5(RGB(-50, 150, 150)) + RGB(200, 0, 0)
+                \end{displaymath}
+                \begin{displaymath}
+                    c = RGB(175, 75, 75)
+                \end{displaymath}
+            \end{mdframed}
+
+        \item Given a polygon with vertices P1, P2, P3, each represented by a 3D vector $\begin{bmatrix} x & y & z\end{bmatrix}$,
+            what formula calculates the face’s normal?
+
+            \begin{mdframed}
+                The normal is the vector facing directly perpendicular to the face.
+
+                Assuming the winding order is $P1, P2, P3$.
+
+                \begin{displaymath}
+                    v_1 = P2 - P1
+                \end{displaymath}
+                \begin{displaymath}
+                    v_2 = P3 - P1
+                \end{displaymath}
+                \begin{displaymath}
+                    p = v_1 \times v_2
+                \end{displaymath}
+                \begin{displaymath}
+                    n = \frac{p}{|p|}
+                \end{displaymath}
+
+                Since the cross product is defined as the vector perpendicular to
+                $v_1$ and $v_2$. However the magnitude is the product 
+                $|v_1| |v_2| sin(\theta)$. So to get a normal with unit length
+                we need to normalize the vector.
+            \end{mdframed}
+    \end{enumerate}
+
+    {\large Part 3}
+    \begin{enumerate}
+        \item Given a point $p = (x, y, z)$ and the point $p' = (x', y', z')$ where $p' = (x', y', z')$ is the point $p = (x, y, z)$ trans-
+            lated by $T_x, T_y, T_z$:
+
+            \begin{enumerate}
+                \item Show the equations to compute $p'$ from $p$
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            x' = x + T_x
+                        \end{displaymath}
+                        \begin{displaymath}
+                            y' = y + T_y
+                        \end{displaymath}
+                        \begin{displaymath}
+                            z' = z + T_z
+                        \end{displaymath}
+                    \end{mdframed}
+                \item Show the $4\times 4$ transformation matrix which takes
+                    $p$ to $p'$.
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            M =
+                            \begin{bmatrix}
+                                1 & 0 & 0 & T_x\\ 
+                                0 & 1 & 0 & T_y\\
+                                0 & 0 & 1 & T_z\\
+                                0 & 0 & 0 & 1 
+                            \end{bmatrix}
+                        \end{displaymath}
+                    \end{mdframed}
+            \end{enumerate}
+            \break
+        \item Given a point $p(x, y, z)$ and the point $p'(x', y', z')$, where $p'(x', y', z')$ is the $\beta$ degree rotated point
+            of $p(x, y, z)$ around the z-axis:
+
+            \begin{enumerate}
+                \item Show the equation to compute $p'$ from $p$.
+                    \begin{mdframed}
+                       \begin{displaymath}
+                           x' = x cos(\beta) - y sin(\beta)
+                       \end{displaymath} 
+                       \begin{displaymath}
+                           y' = x sin(\beta) + y cos(\beta)
+                       \end{displaymath}
+                       \begin{displaymath}
+                           z' = z
+                       \end{displaymath}
+                    \end{mdframed}
+                \item Show the $4 \times 4$ transformation matrix.
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            M =
+                            \begin{bmatrix}
+                                cos(\beta) & -sin(\beta) & 0 & 0\\
+                                sin(\beta) & cos(\beta) & 0 & 0\\
+                                0 & 0 & 1 & 0\\
+                                0 & 0 & 0 & 1
+                            \end{bmatrix}
+                        \end{displaymath}
+                    \end{mdframed}
+            \end{enumerate}
+        \item Given a point $p(x, y, z)$ and the point $p'(x', y', z')$, where $p'(x', y', z')$ is the point $p(x, y, z)$ scaled
+            by $S_x, S_y, S_z$:
+
+            \begin{enumerate}
+                \item Show the equation to compute $p'$ from $p$.
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            x' = x S_x
+                        \end{displaymath}
+                        \begin{displaymath}
+                            y' = y S_y
+                        \end{displaymath}
+                        \begin{displaymath}
+                            z' = z S_z
+                        \end{displaymath}
+                    \end{mdframed}
+                \item Show the $4 \times 4$ transformation matrix.
+                    \begin{mdframed}
+                        \begin{displaymath}
+                            M = 
+                            \begin{bmatrix}
+                                S_x & 0 & 0 & 0\\
+                                0 & S_y & 0 & 0\\
+                                0 & 0 & S_z & 0\\
+                                0 & 0 & 0 & 1
+                            \end{bmatrix}
+                        \end{displaymath}
+                    \end{mdframed}
+            \end{enumerate}
+
+        \item What is a model matrix? Write a simple vertex shader that uses a model matrix. Explain your
+            shader.
+
+            \begin{mdframed}
+                A model matrix is a matrix which transforms objects from
+                a local space where they contain their own origin, to world
+                space where all objects are positioned relative to each other.
+
+                In practice this means a model matrix is unique per object,
+                and can do transformations before the camera and view matrices
+                transform the scene into clip space.
+
+
+                \begin{lstlisting}[language=C]
+#version 300 es
+in vec3 pos;             
+
+uniform mat4 model;
+
+main() {
+    gl_Position = model * vec4(pos, 1.0);
+}
+                \end{lstlisting}
+
+                This is a super simple vertex shader. It uses
+                GLSL 2 which is why it has the version declaration
+                at the top.
+
+                Basically it reads in a vec3 from the vertex
+                data, and a uniform model matrix. Then
+                it sets the position to the model matrix
+                applied to the position via left multiplication.
+
+                This shader is one what would be used via
+                a draw call per object with the model matrix
+                being set per object. I also use a common
+                pattern of converting the position to a vec4,
+                rather than storing it as a vec4 since we
+                always want the w component to be 1.
+            \end{mdframed}
+    \end{enumerate}
+
+\end{document}
