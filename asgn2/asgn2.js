@@ -53,13 +53,16 @@ function main() {
     var cubes = helpers.CreateUniformBuffer(ctx, cube_prog, 0);
     var decor = helpers.CreateUniformBuffer(ctx, decor_prog, 0);
 
-    var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
+    //var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
 
     helpers.BindUniformBuffer(ctx, decor_prog, cubes, 1);
 
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CW);
     gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LESS);
+    gl.depthRange(0.0, 1.0);
+    gl.clearDepth(1.0);
 
     addCube(0, [10, 0.5, 10], [0, -4, 0], WHITE, [0, 0, 0]);
     handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], ORANGE, [0, 0, 0]);
@@ -329,12 +332,11 @@ function tick(curr_time, prog, decor_prog, cubes, decor) {
     })
 }
 
-
 function render(prog, decor_prog, cubes, decor) {
     var mat = new Matrix4();
 
     mat.setIdentity();
-    mat.perspective(90, 1, 0.01, 1000.0);
+    mat.perspective(90, 1, 0.5, 1000.0);
 
     mat.translate(0, 0, -camera.dist);
     mat.rotate(camera.rot.elements[0], 1, 0, 0);

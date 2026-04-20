@@ -108,10 +108,10 @@ var cube_shader = {
     );
 
     layout(std140) uniform cubes {
-        mat4 model[50];
-        mat4 size[50];
-        vec4 color[50];
-        ivec4 parents[50];
+        mat4 model[40];
+        mat4 size[40];
+        vec4 color[40];
+        ivec4 parents[40];
     };
 
     int getParent(int idx) {
@@ -214,17 +214,17 @@ var decor_shader = {
     );
 
     layout(std140) uniform cubes {
-        mat4 model[50];
-        mat4 size[50];
-        vec4 color[50];
-        ivec4 parents[50];
+        mat4 model[40];
+        mat4 size[40];
+        vec4 color[40];
+        ivec4 parents[40];
     };
 
     layout(std140) uniform decor {
-        mat4 model[50];
-        mat4 size[50];
-        vec4 tex[50];
-        ivec4 parent[50];
+        mat4 model[25];
+        mat4 size[25];
+        vec4 tex[25];
+        ivec4 parent[25];
     } d;
 
     int getParent(int idx) {
