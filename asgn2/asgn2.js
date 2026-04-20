@@ -44,6 +44,8 @@ function addDecor(parent, size, pos, rot, anchor, tex) {
 }
 
 const WHITE = [1, 1, 1];
+const ORANGE_WHITE = [1, 0.7, 0.5];
+const BLACK = [0, 0, 0];
 const ORANGE = [1, 0.4, 0];
 
 function main() {
@@ -71,9 +73,6 @@ function main() {
     handles.snout = addCube(handles.head, [0.5, 0.6, 0.5], [0.5, -0.2, 0], ORANGE, [0, 0, 0]);
 
 
-    handles.rEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, 0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, 1, 1]);
-    handles.lEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, -0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, -1, 1]);
-
     handles.rShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, 0.5], ORANGE, [0.0, 0.3, -0.0]);
     handles.frLeg = addCube(handles.rShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
     handles.frFoot = addCube(handles.frLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
@@ -97,7 +96,7 @@ function main() {
 
     for (var i = 1; i < 15; i++) {
         var old = handles.tail[i - 1];
-        handles.tail.push(addCube(old, [0.3, 0.3, 0.3], [-0.15, 0, 0], i % 2 ? WHITE : ORANGE, [0.15, 0, 0]));
+        handles.tail.push(addCube(old, [0.3, 0.3, 0.3], [-0.15, 0, 0], i % 2 ? ORANGE_WHITE : BLACK, [0.15, 0, 0]));
     }
 
     handles.lEar = addCube(handles.head, [0.07, 0.3, 0.15], [0.01, 0.5, 0.3], ORANGE, [0.0, 0.0, 0.0]);
@@ -107,6 +106,10 @@ function main() {
     handles.rEar = addCube(handles.head, [0.07, 0.3, 0.15], [0.01, 0.5, -0.3], ORANGE, [0.0, 0.0, 0.0]);
     handles.rEar2 = addCube(handles.head, [0.1, 0.2, 0.2], [0.0, 0.5, -0.3], ORANGE, [0.0, 0.0, 0.0]);
     handles.rEarIn = addCube(handles.head, [0.09, 0.19, 0.15], [0.01, 0.5, -0.3], WHITE, [0.0, 0.0, 0.0]);
+
+
+    handles.rEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, 0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, 1, 1]);
+    handles.lEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, -0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, -1, 1]);
 
     //used to move the entire model
     handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
@@ -216,11 +219,14 @@ function onMouseMove(ev) {
     camera.vel.elements[0] = dy * 0.5;
 }
 
-var t_total = 0;
-
 var state = "walk";
 var next = "walk";
-var hold = false;
+var curr_frame = walk_animation[0];
+var next_frame = walk_animation[0];
+
+var index = 0;
+var t_frac = 0;
+
 function updatePose(dt) {
     const frame_toggle = document.getElementById("frame-toggle").checked;
     var anim_name = document.getElementById("anim").value;
@@ -256,34 +262,31 @@ function updatePose(dt) {
         }
 
         //interpolate frames
-        const t_frac = t_total % 1;
-        const t_int = (t_total - t_frac + animation.anim.length) % animation.anim.length;
+        t_frac += animation.speed * 1/12.0;
 
-        const index = t_int;
-        const frame1 = animation.anim[index];
-        var frame2 = animation.anim[(index + 1) % animation.anim.length];
+        if (t_frac > 1) {
+            index = (index + 1) % animation.anim.length;
+            t_frac %= 1;
 
-        blendFrame(t_frac, frame1, frame2);
+            curr_frame = next_frame;
+            next_frame = animation.anim[index];
+
+            if (index == animation.anim.length - 1 && dynamic_toggle) {
+                index = 0;
+                state = next;
+                if (state == "sit") {
+                    next = "sit-idle";
+                }
+                if (state == "sit-rev") {
+                    next = "walk";
+                }
+            }
+
+        }
+
+
+        blendFrame(t_frac, curr_frame, next_frame);
         animal.cubes[handles.core].pos.elements[1] = animation.bob * 0.05 * Math.sin(Math.PI * 3 * time / 1000);
-
-        t_total += animation.speed * 1/12;
-        t_total = (t_total + animation.anim.length) % animation.anim.length;
-
-        if (index == animation.anim.length - 1 && dynamic_toggle && !hold) {
-            hold = true;
-            state = next;
-            if (state == "sit") {
-                next = "sit-idle";
-            }
-            if (state == "sit-rev") {
-                next = "walk";
-            }
-            t_total %= 1;
-        }
-        if (index != 0) {
-            hold = false;
-        }
-
         return;
     }
 
