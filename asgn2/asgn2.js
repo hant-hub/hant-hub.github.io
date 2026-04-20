@@ -50,12 +50,12 @@ function main() {
     var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
     var decor_prog = helpers.CompileShaders(ctx, decor_shader.vert, decor_shader.frag);
     //var prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
-    var cubes = helpers.CreateUniformBuffer(ctx, cube_prog, 0);
-    var decor = helpers.CreateUniformBuffer(ctx, decor_prog, 0);
+    var cubes = helpers.CreateUniformBuffer(ctx, cube_prog, cube_prog.block_map["cubes"]);
+    var decor = helpers.CreateUniformBuffer(ctx, decor_prog, decor_prog.block_map["decor"]);
 
-    //var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
+    var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
 
-    helpers.BindUniformBuffer(ctx, decor_prog, cubes, 1);
+    helpers.BindUniformBuffer(ctx, decor_prog, cubes, decor_prog.block_map["cubes"]);
 
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CW);
@@ -82,14 +82,14 @@ function main() {
     handles.flLeg = addCube(handles.lShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
     handles.flFoot = addCube(handles.flLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
 
-    handles.rear = addCube(handles.body, [2.5, 1.35, 1], [-1, 0.75, 0], ORANGE, [1.25, 0.7, 0]);
+    handles.rear = addCube(handles.body, [2.5, 1.35, 0.9], [-1, 0.75, 0], ORANGE, [1.25, 0.7, 0]);
 
     handles.rHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, 0.5], ORANGE, [0, 0.3, 0]);
-    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
     handles.rlFoot = addCube(handles.rlLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
 
     handles.lHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, -0.5], ORANGE, [0, 0.3, 0]);
-    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.3], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
     handles.llFoot = addCube(handles.llLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
 
     handles.tail = [];
@@ -228,6 +228,9 @@ function updatePose(dt) {
     const dynamic_toggle  = document.getElementById("dynamic-toggle").checked;
     if (dynamic_toggle) {
         anim_name = state;
+    } else {
+        state = "walk";
+        next = "walk";
     }
 
     const animation = animation_data[anim_name];
@@ -261,7 +264,7 @@ function updatePose(dt) {
         var frame2 = animation.anim[(index + 1) % animation.anim.length];
 
         blendFrame(t_frac, frame1, frame2);
-        animal.cubes[handles.core].pos.elements[1] = animation.bob * 0.05 * Math.sin(Math.PI * 2 * t_total / 4);
+        animal.cubes[handles.core].pos.elements[1] = animation.bob * 0.05 * Math.sin(Math.PI * 3 * time / 1000);
 
         t_total += animation.speed * 1/12;
         t_total = (t_total + animation.anim.length) % animation.anim.length;
@@ -275,7 +278,7 @@ function updatePose(dt) {
             if (state == "sit-rev") {
                 next = "walk";
             }
-            t_total = 0;
+            t_total %= 1;
         }
         if (index != 0) {
             hold = false;

@@ -164,7 +164,10 @@ var helpers = function() {
         );
 
         var block_data = [];
+        var block_map = {};
         for (var i = 0; i < num_blocks; i++) {
+
+            const block_name = gl.getActiveUniformBlockName(program, i);
 
             const active_indicies = gl.getActiveUniformBlockParameter(
                 program,
@@ -184,7 +187,9 @@ var helpers = function() {
                 gl.UNIFORM_OFFSET,
             );
 
+            block_map[block_name] = i;
             block_data.push({
+                name: block_name,
                 size: blockSize,
                 offsets: uniform_offsets,
             });
@@ -196,6 +201,7 @@ var helpers = function() {
             p: program,
             attrs: attr_infos,
             uniform_loc: uniforms,
+            block_map: block_map,
             uniform_blocks: block_data,
             count: count,
         };

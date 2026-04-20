@@ -57,7 +57,7 @@ const animation_data = {
         anim: sit_idle,
         speed: 0.3,
         loop: true,
-        bob: 0.8,
+        bob: 0.0,
     },
 
     "sit-rev": {
