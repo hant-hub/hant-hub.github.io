@@ -202,7 +202,7 @@ function main() {
 
     console.log(handles);
 
-    gl.clearColor(0.2, 0.2, 0.4, 1.0);
+    gl.clearColor(0.4, 0.4, 0.8, 1.0);
     tick(0, cube_prog, decor_prog, grass_prog, cubes, decor);
 }
 
