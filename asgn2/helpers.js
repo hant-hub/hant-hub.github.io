@@ -149,7 +149,6 @@ var helpers = function() {
                     stride: 0,
                     offset: stride,
                 });
-
                 stride += tinfo.size;
                 count += tinfo.count;
             }
@@ -157,12 +156,13 @@ var helpers = function() {
 
         numAttribs -= builtins;
 
-        for (var i = 0; i < numAttribs; i++) {
+        for (var i = 0; i < attr_infos.length; i++) {
             attr_infos[i].stride = stride;
         }
 
         //parse Uniforms
         var uniforms = [];
+        var mapping = {};
         const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
         for (var i = 0; i < numUniforms; i++) {
             const uinfo = gl.getActiveUniform(program, i);
@@ -173,6 +173,7 @@ var helpers = function() {
                     location: location,
                     type: uinfo.type,
                 });
+                mapping[uinfo.name] = uniforms.length - 1;
             }
         }
 
@@ -219,6 +220,7 @@ var helpers = function() {
             p: program,
             attrs: attr_infos,
             uniform_loc: uniforms,
+            uniform_map: mapping,
             block_map: block_map,
             uniform_blocks: block_data,
             count: count,
@@ -341,6 +343,9 @@ var helpers = function() {
         const info = prog.uniform_loc[index];
 
         switch (info.type) {
+            case gl.FLOAT: {
+                gl.uniform1f(info.location, value);
+            } break;
             case gl.FLOAT_MAT4: {
                 gl.uniformMatrix4fv(info.location, false, value);
             } break;

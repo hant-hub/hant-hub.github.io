@@ -315,6 +315,8 @@ var grass_shader = {
         in mat4 root;
 
         uniform mat4 pv;
+        uniform float time;
+        uniform float scroll;
 
         vec3 pos[] = vec3[](
             //bottom segment
@@ -343,21 +345,78 @@ var grass_shader = {
             vec3(0.5, 1.0, 0.0)
         );
 
-        out vec4 debugColor;
+        out float v;
+
+        //thanks to James_Harnett on ShaderToy for the hashing function
+        float hash_WithoutSine(vec2 p)
+        {
+            vec3 p3  = fract(vec3(p.xyx) * .1031);
+            p3 += dot(p3, p3.yzx + 19.19);
+            return fract((p3.x + p3.y) * p3.z);
+        }
 
         void main() {
-            gl_Position = pv * root * vec4(pos[gl_VertexID % 15], 1.0);
-            debugColor = root * vec4(float(gl_InstanceID) * 0.1, 0.0, 0.0, 1.0);
+            vec3 p = (root * vec4(pos[gl_VertexID % 15], 1.0)).xyz;
+            vec3 probe = (root * vec4(pos[0], 1.0)).xyz;
+
+            vec3 p_n = (vec4(pos[gl_VertexID % 15], 1.0)).xyz;
+
+            vec3 wind_dir = normalize((vec4(1.0, 0.0, 1.0, 0.0)).xyz);
+
+            float r = hash_WithoutSine(vec2(gl_InstanceID, gl_InstanceID));
+            if (r > 1.0) {
+                r = 1.0;
+            } else if (r < 0.0) {
+                r = 0.0;
+            }
+
+            if (p_n.y > 0.0) {
+                p_n.y += r * r * 0.3;
+            }
+
+            float t = time + 0.1 * dot(p, normalize(wind_dir));
+            float s = sin(t);
+
+            if (p_n.y < 1.0) {
+            } else if (p_n.y < 1.5) {
+                p -= s * s * 0.3 * wind_dir;
+            } else {
+                p -= s * s * 0.4 * wind_dir;
+            }
+
+            float scr = probe.x + scroll;
+            if (scr < -25.0) scr = fract((scr + 25.0)/50.0) * 50.0 - 25.0;
+            if (scr > 25.0) scr = fract((scr + 25.0)/50.0) * 50.0 - 25.0;
+            p.x += scr - probe.x;
+
+
+            gl_Position = pv * vec4(p, 1.0);
+
+            float fr = time + 0.1 * dot(p, normalize(wind_dir));
+            v = (0.1 * r + 0.4);
+            
+            if (p_n.y < 0.5) {
+            } else if (p_n.y < 1.0) {
+                v += 0.1;
+            } else if (p_n.y < 1.5) {
+                v += 0.2;
+            } else {
+                v += 0.3;
+            }
+
+            //v = sin(fr) * sin(fr);
+
         }
     `,
     frag: `#version 300 es
         precision mediump float;
         out vec4 fragColor;
-        in vec4 debugColor;
+        in float v;
 
         void main() {
-            fragColor = vec4(0.0, 1.0, 0.0, 1.0);
-            //fragColor = debugColor;
+            fragColor = vec4(0.0, 1.0, 0.0, 1.0) * v;
+
+            fragColor.w = 1.0;
         }
     `
 };

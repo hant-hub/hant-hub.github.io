@@ -50,6 +50,7 @@ const BLACK = [0, 0, 0];
 const ORANGE = [1, 0.4, 0];
 
 var grass_verts = null;
+var num_grass = 100_000;
 
 function main() {
     var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
@@ -60,18 +61,19 @@ function main() {
     var decor = helpers.CreateUniformBuffer(ctx, decor_prog, decor_prog.block_map["decor"]);
 
     grass_verts = helpers.CreateVertBuffer(ctx, grass_prog);
-    helpers.ResizeVertBuffer(ctx, grass_verts, 64 * 5000);
     gl.vertexAttribDivisor(0, 1);
     gl.vertexAttribDivisor(1, 1);
     gl.vertexAttribDivisor(2, 1);
     gl.vertexAttribDivisor(3, 1);
+    helpers.ResizeVertBuffer(ctx, grass_verts, 64 * 5000);
+    console.log(grass_prog.attrs);
 
     var elements = [];
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < num_grass; i++) {
         var mat = new Matrix4();
-        mat.setIdentity();
-        mat.translate(i/20, -4, i);
-        mat.scale(0.1, 1.0, 1.0);
+        mat.setTranslate(Math.random() * 50 - 25, -2.5, Math.random() * 50 - 25);
+        mat.rotate(50 * i, 0, 1, 0);
+        mat.scale(0.2, 1.0, 1.0);
 
         elements.push(...Array.from(mat.elements));
     }
@@ -138,12 +140,12 @@ function main() {
     handles.rEarIn = addCube(handles.head, [0.09, 0.19, 0.15], [0.01, 0.5, -0.3], WHITE, [0.0, 0.0, 0.0]);
 
 
-    handles.face = addDecor(handles.head, [1.0, 1.0], [0.26, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0, 1.0, 0.5, -0.5]);
-    handles.snoutleft = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, 0.26], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
-    handles.snoutright = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, -0.26], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
-    handles.snouttop = addDecor(handles.snout, [0.53, 0.54], [0.0, 0.26, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
-    handles.snoutbot = addDecor(handles.snout, [0.53, 0.54], [0.0, -0.26, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
-    handles.snoutfront = addDecor(handles.snout, [0.53, 0.53], [0.26, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0.19, 0.87, 0.12, -0.12]);
+    handles.face = addDecor(handles.head, [1.0, 1.0], [0.265, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0, 1.0, 0.5, -0.5]);
+    handles.snoutleft = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, 0.265], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
+    handles.snoutright = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, -0.265], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
+    handles.snouttop = addDecor(handles.snout, [0.53, 0.54], [0.0, 0.265, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
+    handles.snoutbot = addDecor(handles.snout, [0.53, 0.54], [0.0, -0.265, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
+    handles.snoutfront = addDecor(handles.snout, [0.53, 0.53], [0.265, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0.19, 0.87, 0.12, -0.12]);
 
     //used to move the entire model
     handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
@@ -261,9 +263,12 @@ var next_frame = walk_animation[0];
 var index = 0;
 var t_frac = 0;
 
+var t_time = 0;
+
 function updatePose(dt) {
     const frame_toggle = document.getElementById("frame-toggle").checked;
     var anim_name = document.getElementById("anim").value;
+
 
     const dynamic_toggle  = document.getElementById("dynamic-toggle").checked;
     if (dynamic_toggle) {
@@ -289,6 +294,7 @@ function updatePose(dt) {
     const play_toggle = document.getElementById("play-toggle").checked;
 
     if (play_toggle) {
+        if (state == "walk") t_time += dt;
         //wiggle tail
         for (var i = 0; i < handles.tail.length; i++) {
             animal.cubes[handles.tail[i]].rot.elements[1] = 10 * Math.sin(time * 0.001 + i * Math.PI/8);
@@ -357,7 +363,7 @@ function tick(curr_time, prog, decor_prog, grass_prog, cubes, decor) {
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {
-        const dt = (endTime - startTime) / 1000; //dt is in seconds
+        //const dt = (endTime - startTime) / 1000; //dt is in seconds
         avg_dt = avg_dt * 0.95 + 0.05 * dt; //blend dt to get average
 
         //convert sec to ms, then round to 2 places
@@ -385,7 +391,11 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
 
     helpers.SetUniform(ctx, prog, 0, mat.elements);
     helpers.SetUniform(ctx, decor_prog, 0, mat.elements);
-    helpers.SetUniform(ctx, grass_prog, 0, mat.elements);
+
+    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.pv, mat.elements);
+    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.time, time/1000);
+    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.scroll, -1.4 * t_time);
+    //console.log(-2 * time/1000);
     //mat.invert();
     //helpers.SetUniform(ctx, prog, 1, mat.elements);
 
@@ -493,5 +503,5 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
         ctx.state.vertexbuffer = grass_verts;
     }
 
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 15, 3);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 15, num_grass);
 }
