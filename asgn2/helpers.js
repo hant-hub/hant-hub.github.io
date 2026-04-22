@@ -51,24 +51,35 @@ var helpers = function() {
                     type: gl.FLOAT,
                     count: 1,
                     size: 4,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC2:
                 return {
                     type: gl.FLOAT,
                     count: 2,
                     size: 8,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC3:
                 return {
                     type: gl.FLOAT,
                     count: 3,
                     size: 12,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC4:
                 return {
                     type: gl.FLOAT,
                     count: 4,
                     size: 16,
+                    dup: 1,
+                };
+            case gl.FLOAT_MAT4:
+                return {
+                    type: gl.FLOAT,
+                    count: 4,
+                    size: 16,
+                    dup: 4,
                 };
             default:
                 console.log("Unknown Attr Type");
@@ -122,19 +133,26 @@ var helpers = function() {
                 continue;
             }
 
+            if (info.name == "gl_InstanceID") {//skip builtin vars
+                builtins++;
+                continue;
+            }
+
             const location = gl.getAttribLocation(program, info.name);
             const tinfo = ParseGeneralType(gl, info.type);
 
-            attr_infos.push({
-                location: location,
-                type: tinfo.type,
-                count: tinfo.count,
-                stride: 0,
-                offset: stride,
-            });
+            for (var i = 0; i < tinfo.dup; i++) {
+                attr_infos.push({
+                    location: location + i,
+                    type: tinfo.type,
+                    count: tinfo.count,
+                    stride: 0,
+                    offset: stride,
+                });
 
-            stride += tinfo.size;
-            count += tinfo.count;
+                stride += tinfo.size;
+                count += tinfo.count;
+            }
         }
 
         numAttribs -= builtins;
@@ -391,7 +409,7 @@ var helpers = function() {
 
         if (ctx.state.vertexbuffer !== buffer) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
-            gl.bindVertexArray(buffer.vao);
+            //gl.bindVertexArray(buffer.vao);
             ctx.state.vertexbuffer = buffer;
         }
 
@@ -451,6 +469,8 @@ var helpers = function() {
                 srcType,
                 img,
             );
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
             gl.generateMipmap(gl.TEXTURE_2D);
         }

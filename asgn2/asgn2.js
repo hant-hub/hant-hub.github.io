@@ -15,12 +15,13 @@ var camera = {
     vel: new Vector3(),
 };
 
-function addCube(parent, size, pos, color, anchor) {
+function addCube(parent, size, pos, color, anchor, stripe) {
     const handle = animal.cubes.length;
     animal.cubes.push({
         pos: new Vector3(pos),
         anchor: new Vector3(anchor).mul(-1),
         size: new Vector3(size),
+        stripe: stripe ? stripe : [0, 1, 1, 1.5],
         color: color,
         rot: new Vector3([0, 0, 0]),
         parent: parent ? parent + 1 : 0,
@@ -48,14 +49,40 @@ const ORANGE_WHITE = [1, 0.7, 0.5];
 const BLACK = [0, 0, 0];
 const ORANGE = [1, 0.4, 0];
 
+var grass_verts = null;
+
 function main() {
     var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
     var decor_prog = helpers.CompileShaders(ctx, decor_shader.vert, decor_shader.frag);
+    var grass_prog = helpers.CompileShaders(ctx, grass_shader.vert, grass_shader.frag);
     //var prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
     var cubes = helpers.CreateUniformBuffer(ctx, cube_prog, cube_prog.block_map["cubes"]);
     var decor = helpers.CreateUniformBuffer(ctx, decor_prog, decor_prog.block_map["decor"]);
 
-    var eye_texture = helpers.LoadTexture(ctx, "img/eye.jpg");
+    grass_verts = helpers.CreateVertBuffer(ctx, grass_prog);
+    helpers.ResizeVertBuffer(ctx, grass_verts, 64 * 5000);
+    gl.vertexAttribDivisor(0, 1);
+    gl.vertexAttribDivisor(1, 1);
+    gl.vertexAttribDivisor(2, 1);
+    gl.vertexAttribDivisor(3, 1);
+
+    var elements = [];
+    for (var i = 0; i < 3; i++) {
+        var mat = new Matrix4();
+        mat.setIdentity();
+        mat.translate(i/20, -4, i);
+        mat.scale(0.1, 1.0, 1.0);
+
+        elements.push(...Array.from(mat.elements));
+    }
+
+    console.log(elements.length);
+    if (helpers.SubVerts(ctx, grass_verts, 0, elements)) {
+        console.log("failed");
+    }
+
+
+    var texture = helpers.LoadTexture(ctx, "img/decor.png");
 
     helpers.BindUniformBuffer(ctx, decor_prog, cubes, decor_prog.block_map["cubes"]);
 
@@ -66,29 +93,32 @@ function main() {
     gl.depthRange(0.0, 1.0);
     gl.clearDepth(1.0);
 
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     addCube(0, [10, 0.5, 10], [0, -4, 0], WHITE, [0, 0, 0]);
-    handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], ORANGE, [0, 0, 0]);
-    handles.neck = addCube(handles.body, [1, 0.8, 0.8], [0.5, 0.40, 0], ORANGE, [-0.5, 0, 0.0]);
-    handles.head = addCube(handles.neck, [0.5, 1, 1.0], [0.5, 0, 0], ORANGE, [-0.25, -0.1, 0]);
-    handles.snout = addCube(handles.head, [0.5, 0.6, 0.5], [0.5, -0.2, 0], ORANGE, [0, 0, 0]);
+    handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], ORANGE, [0, 0, 0], [1, 0, 1, 0.5]);
+    handles.neck = addCube(handles.body, [1, 0.8, 0.8], [0.5, 0.40, 0], ORANGE, [-0.5, 0, 0.0], [1, 0, 0.5, 0.5]);
+    handles.head = addCube(handles.neck, [0.5, 1, 1.0], [0.5, 0, 0], ORANGE, [-0.25, -0.1, 0], [1, 0, 0.5, 0.8]);
+    handles.snout = addCube(handles.head, [0.5, 0.5, 0.5], [0.5, -0.2, 0], [242/255, 143/255, 136/255], [0, 0, 0]);
 
 
-    handles.rShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, 0.5], ORANGE, [0.0, 0.3, -0.0]);
-    handles.frLeg = addCube(handles.rShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
+    handles.rShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, 0.5], ORANGE, [0.0, 0.3, -0.0], [0, 1, 0.5, 0.5]);
+    handles.frLeg = addCube(handles.rShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0], [0, 1, 1.0, 0.5]);
     handles.frFoot = addCube(handles.frLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
 
-    handles.lShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, -0.5], ORANGE, [0.0, 0.3, -0.0]);
-    handles.flLeg = addCube(handles.lShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0]);
+    handles.lShoulder = addCube(handles.body, [0.8, 1.0, 0.6], [0.5, 0.0, -0.5], ORANGE, [0.0, 0.3, -0.0], [0, 1, 0.5, 0.5]);
+    handles.flLeg = addCube(handles.lShoulder, [0.5, 1.4, 0.5], [0.0, -0.45, 0.0], ORANGE, [0.0, 0.4, 0.0], [0, 1, 1.0, 0.5]);
     handles.flFoot = addCube(handles.flLeg, [0.7, 0.3, 0.6], [0.0, -0.7, 0.0], ORANGE, [-0.1, 0.15, 0.0]);
 
-    handles.rear = addCube(handles.body, [2.5, 1.35, 0.9], [-1, 0.75, 0], ORANGE, [1.25, 0.7, 0]);
+    handles.rear = addCube(handles.body, [2.5, 1.35, 0.9], [-1, 0.75, 0], ORANGE, [1.25, 0.7, 0], [1, 0, 1, 0.5]);
 
-    handles.rHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, 0.5], ORANGE, [0, 0.3, 0]);
-    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.rHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, 0.5], ORANGE, [0, 0.3, 0], [0, 1, 0.5, 0.5]);
+    handles.rlLeg = addCube(handles.rHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0], [0, 1, 1.0, 0.5]);
     handles.rlFoot = addCube(handles.rlLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
 
-    handles.lHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, -0.5], ORANGE, [0, 0.3, 0]);
-    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0]);
+    handles.lHip = addCube(handles.rear, [0.8, 1.4, 0.3], [-0.4, 0, -0.5], ORANGE, [0, 0.3, 0], [0, 1, 0.5, 0.5]);
+    handles.llLeg = addCube(handles.lHip, [0.6, 1.0, 0.25], [0, -0.70, 0.0], ORANGE, [0, 0.5, 0], [0, 1, 1.0, 0.5]);
     handles.llFoot = addCube(handles.llLeg, [0.7, 0.3, 0.6], [0, -0.5, 0], ORANGE, [-0.1, 0.15, 0]);
 
     handles.tail = [];
@@ -108,8 +138,12 @@ function main() {
     handles.rEarIn = addCube(handles.head, [0.09, 0.19, 0.15], [0.01, 0.5, -0.3], WHITE, [0.0, 0.0, 0.0]);
 
 
-    handles.rEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, 0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, 1, 1]);
-    handles.lEye = addDecor(handles.head, [0.2, 0.2], [0.26, 0.2, -0.3], [0, 90, 0], [0.0, 0.0, 0.0], [0, 0, -1, 1]);
+    handles.face = addDecor(handles.head, [1.0, 1.0], [0.26, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0, 1.0, 0.5, -0.5]);
+    handles.snoutleft = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, 0.26], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
+    handles.snoutright = addDecor(handles.snout, [0.53, 0.53], [0.0, 0.0, -0.26], [0, 0, 0], [0, 0, 0], [0, 0.5, 0.5, -0.5]);
+    handles.snouttop = addDecor(handles.snout, [0.53, 0.54], [0.0, 0.26, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
+    handles.snoutbot = addDecor(handles.snout, [0.53, 0.54], [0.0, -0.26, 0.0], [90, 0, 0], [0, 0, 0], [0, 0.3, 0.5, -0.3]);
+    handles.snoutfront = addDecor(handles.snout, [0.53, 0.53], [0.26, 0.0, 0.0], [0, 90, 0], [0, 0, 0], [0.19, 0.87, 0.12, -0.12]);
 
     //used to move the entire model
     handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
@@ -166,8 +200,8 @@ function main() {
 
     console.log(handles);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    tick(0, cube_prog, decor_prog, cubes, decor);
+    gl.clearColor(0.2, 0.2, 0.4, 1.0);
+    tick(0, cube_prog, decor_prog, grass_prog, cubes, decor);
 }
 
 async function printFrame() {
@@ -305,7 +339,7 @@ function updatePose(dt) {
 
 var time = 0;
 var avg_dt = 0;
-function tick(curr_time, prog, decor_prog, cubes, decor) {
+function tick(curr_time, prog, decor_prog, grass_prog, cubes, decor) {
     dt = curr_time - time;
     if (dt > 2000) dt = 2000;
     if (dt == 0) dt = 0.0001
@@ -317,7 +351,7 @@ function tick(curr_time, prog, decor_prog, cubes, decor) {
     camera.rot.add(camera.vel);
     camera.vel.mul(0.9);
 
-    render(prog, decor_prog, cubes, decor);
+    render(prog, decor_prog, grass_prog, cubes, decor);
 
     updatePose(dt);
 
@@ -334,11 +368,11 @@ function tick(curr_time, prog, decor_prog, cubes, decor) {
     }
 
     requestAnimationFrame((dt) => {
-        tick(dt, prog, decor_prog, cubes, decor);
+        tick(dt, prog, decor_prog, grass_prog, cubes, decor);
     })
 }
 
-function render(prog, decor_prog, cubes, decor) {
+function render(prog, decor_prog, grass_prog, cubes, decor) {
     var mat = new Matrix4();
 
     mat.setIdentity();
@@ -351,12 +385,14 @@ function render(prog, decor_prog, cubes, decor) {
 
     helpers.SetUniform(ctx, prog, 0, mat.elements);
     helpers.SetUniform(ctx, decor_prog, 0, mat.elements);
+    helpers.SetUniform(ctx, grass_prog, 0, mat.elements);
     //mat.invert();
     //helpers.SetUniform(ctx, prog, 1, mat.elements);
 
     var sizes = [];
     var models = [];
     var colors = [];
+    var stripes = [];
     var parents = [];
     for (var i = 0; i < animal.cubes.length; i++) {
         const pos = animal.cubes[i].pos;
@@ -364,6 +400,7 @@ function render(prog, decor_prog, cubes, decor) {
         const size = animal.cubes[i].size;
         const rot = animal.cubes[i].rot;
         const parent = animal.cubes[i].parent;
+        const stripe = animal.cubes[i].stripe;
         const color = animal.cubes[i].color;
 
         const model = new Matrix4();
@@ -384,6 +421,8 @@ function render(prog, decor_prog, cubes, decor) {
         models.push(...elements);
         parents.push(parent);
 
+        stripes.push(...stripe);
+
         colors.push(...color);
         colors.push(1.0);
     }
@@ -391,7 +430,8 @@ function render(prog, decor_prog, cubes, decor) {
     helpers.UploadUniform(ctx, cubes, 0, 0, models);
     helpers.UploadUniform(ctx, cubes, 0, 1, sizes);
     helpers.UploadUniform(ctx, cubes, 0, 2, colors);
-    helpers.UploadUniform(ctx, cubes, 1, 3, parents);
+    helpers.UploadUniform(ctx, cubes, 0, 3, stripes);
+    helpers.UploadUniform(ctx, cubes, 1, 4, parents);
 
     models = [];
     sizes = [];
@@ -432,6 +472,26 @@ function render(prog, decor_prog, cubes, decor) {
     helpers.UploadUniform(ctx, decor, 1, 3, parents);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.enable(gl.CULL_FACE);
+    gl.frontFace(gl.CW);
+
     helpers.Draw(ctx, prog, 36 * animal.cubes.length);
+
+    gl.disable(gl.CULL_FACE);
+
     helpers.Draw(ctx, decor_prog, 6 * animal.decor.length);
+
+    if (ctx.state.prog !== grass_prog) {
+        gl.useProgram(grass_prog.p);
+        ctx.state.prog = grass_prog;
+    }
+
+    if (ctx.state.vertexbuffer !== grass_verts) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, grass_verts.buffer);
+        gl.bindVertexArray(grass_verts.vao);
+        ctx.state.vertexbuffer = grass_verts;
+    }
+
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 15, 3);
 }
