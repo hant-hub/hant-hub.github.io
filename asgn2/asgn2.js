@@ -6,6 +6,8 @@ var animal = {
     decor: [],
 };
 
+var fliers = [];
+
 const StringToHandle = {};
 
 var handles = {};
@@ -14,6 +16,18 @@ var camera = {
     rot: new Vector3(),
     vel: new Vector3(),
 };
+
+function addFlier() {
+
+    var core = addCube(0, [10, 10, 10], [0, 10, 0], [0.1, 0.1, 0.1], [0.0, 0.0, 0.0]);
+
+    fliers.push({
+        pos: new Vector3(),
+        vel: new Vector3(),
+        handle: core,
+    });
+
+}
 
 function addCube(parent, size, pos, color, anchor, stripe) {
     const handle = animal.cubes.length;
@@ -50,7 +64,11 @@ const BLACK = [0, 0, 0];
 const ORANGE = [1, 0.4, 0];
 
 var grass_verts = null;
-var num_grass = 100_000;
+var grass_density = 15;
+var grass_x = 50;
+var grass_y = 50;
+
+var num_grass = grass_density * grass_x * grass_y;
 
 function main() {
     var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
@@ -66,10 +84,10 @@ function main() {
     gl.vertexAttribDivisor(2, 1);
     gl.vertexAttribDivisor(3, 1);
     helpers.ResizeVertBuffer(ctx, grass_verts, 64 * 5000);
-    console.log(grass_prog.attrs);
+    console.log(num_grass);
 
     var elements = [];
-    for (var i = 0; i < num_grass; i++) {
+    for (var i = 0; i < grass_density * grass_x * grass_y; i++) {
         var mat = new Matrix4();
         mat.setTranslate(Math.random() * 50 - 25, -2.5, Math.random() * 50 - 25);
         mat.rotate(50 * i, 0, 1, 0);
@@ -151,6 +169,9 @@ function main() {
     handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
     animal.cubes[handles.body].parent = handles.core + 1;
 
+    console.log(addCube(0, [10, 10, 10], [0, 10, 0], [0.1, 0.1, 0.1], [0.0, 0.0, 0.0]))
+    addFlier();
+
     StringToHandle["body"] = handles.body;
     StringToHandle["rear"] = handles.rear;
     StringToHandle["neck"] = handles.neck;
@@ -225,6 +246,8 @@ async function printFrame() {
 }
 
 function blendCube(handle, t, rot1, rot2) {
+    t = 3 * (t * t) - 2 * (t * t * t);
+
     var rdiff = new Vector3();
     rdiff.add(rot2);
     rdiff.sub(rot1);
@@ -301,6 +324,7 @@ function updatePose(dt) {
             animal.cubes[handles.tail[i]].rot.elements[0] = 10 * Math.sin(10 + time * 0.001 + i * Math.PI/8);
         }
 
+
         //interpolate frames
         t_frac += animation.speed * 1/12.0;
 
@@ -326,7 +350,12 @@ function updatePose(dt) {
 
 
         blendFrame(t_frac, curr_frame, next_frame);
+
         animal.cubes[handles.core].pos.elements[1] = animation.bob * 0.05 * Math.sin(Math.PI * 3 * time / 1000);
+        if (state == "walk") {
+            animal.cubes[handles.neck].rot.elements[2] -= 3 * Math.sin(time / 1000 * 3 * Math.PI);
+            animal.cubes[handles.head].rot.elements[2] += 3 * Math.sin(time / 1000 * 3 * Math.PI);
+        }
         return;
     }
 
@@ -363,7 +392,7 @@ function tick(curr_time, prog, decor_prog, grass_prog, cubes, decor) {
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {
-        //const dt = (endTime - startTime) / 1000; //dt is in seconds
+        const dt = (endTime - startTime) / 1000; //dt is in seconds
         avg_dt = avg_dt * 0.95 + 0.05 * dt; //blend dt to get average
 
         //convert sec to ms, then round to 2 places
@@ -389,8 +418,12 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
     mat.rotate(camera.rot.elements[1], 0, 1, 0);
     mat.rotate(camera.rot.elements[2], 0, 0, 1);
 
-    helpers.SetUniform(ctx, prog, 0, mat.elements);
-    helpers.SetUniform(ctx, decor_prog, 0, mat.elements);
+    helpers.SetUniform(ctx, prog, prog.uniform_map.pv, mat.elements);
+    helpers.SetUniform(ctx, prog, prog.uniform_map.time, time/1000);
+
+
+    helpers.SetUniform(ctx, decor_prog, decor_prog.uniform_map.pv, mat.elements);
+    helpers.SetUniform(ctx, decor_prog, decor_prog.uniform_map.time, time/1000);
 
     helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.pv, mat.elements);
     helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.time, time/1000);

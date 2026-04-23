@@ -17,6 +17,7 @@ var cube_shader = {
     out vec4 frag_stripe;
 
     uniform mat4 pv;
+    uniform float time;
 
     vec3 verts[] = vec3[](
         // Back face
@@ -108,12 +109,43 @@ var cube_shader = {
         vec2(0.0f, 1.0f)  // top-left              
     );
 
+    float random (in vec2 st) {
+        return fract(sin(dot(st.xy,
+            vec2(12.9898,78.233)))
+            * 43758.5453123);
+    }
+
+// 2D Noise based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise (in vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+
+    // Smooth Interpolation
+
+    // Cubic Hermine Curve.  Same as SmoothStep()
+    vec2 u = f*f*(3.0-2.0*f);
+    // u = smoothstep(0.,1.,f);
+
+    // Mix 4 coorners percentages
+    return mix(a, b, u.x) +
+        (c - a)* u.y * (1.0 - u.x) +
+        (d - b) * u.x * u.y;
+}
+
+
     layout(std140) uniform cubes {
-        mat4 model[40];
-        mat4 size[40];
-        vec4 color[40];
-        vec4 stripe[40];
-        ivec4 parents[40];
+        mat4 model[50];
+        mat4 size[50];
+        vec4 color[50];
+        vec4 stripe[50];
+        ivec4 parents[50];
     };
 
     int getParent(int idx) {
@@ -158,13 +190,17 @@ var cube_shader = {
 
     void main() {
         mat4 model = getModel(gl_VertexID/36) * size[gl_VertexID/36];
+        vec3 p = (model * vec4(verts[gl_VertexID % 36], 1.0)).xyz;
         gl_Position = pv * model * vec4(verts[gl_VertexID % 36], 1.0);
         //VertColor = vec4(uv[gl_VertexID % 36], 0.0, 1.0);
 
         frag_stripe = stripe[gl_VertexID/36];       
 
+        float v = 0.8;
+        vec3 wind_dir = normalize((vec4(1.0, 0.0, 1.0, 0.0)).xyz);
+        v -= 0.3 * (2.0 * noise(p.xz/10.0 + 0.4 * time * wind_dir.xz) - 0.5);
 
-        VertColor = color[gl_VertexID/36];
+        VertColor = color[gl_VertexID/36] * v;
         fragUV = uv[gl_VertexID % 36];
     }`,
 
@@ -202,6 +238,7 @@ var decor_shader = {
     out vec2 fragUV;
 
     uniform mat4 pv;
+    uniform float time;
 
     vec3 verts[] = vec3[](
         // Front face
@@ -224,11 +261,11 @@ var decor_shader = {
     );
 
     layout(std140) uniform cubes {
-        mat4 model[40];
-        mat4 size[40];
-        vec4 color[40];
-        vec4 stripe[40];
-        ivec4 parents[40];
+        mat4 model[50];
+        mat4 size[50];
+        vec4 color[50];
+        vec4 stripe[50];
+        ivec4 parents[50];
     };
 
     layout(std140) uniform decor {
@@ -272,13 +309,50 @@ var decor_shader = {
         return base;
     }
 
+    float random (in vec2 st) {
+        return fract(sin(dot(st.xy,
+            vec2(12.9898,78.233)))
+            * 43758.5453123);
+    }
+
+// 2D Noise based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise (in vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+
+    // Smooth Interpolation
+
+    // Cubic Hermine Curve.  Same as SmoothStep()
+    vec2 u = f*f*(3.0-2.0*f);
+    // u = smoothstep(0.,1.,f);
+
+    // Mix 4 coorners percentages
+    return mix(a, b, u.x) +
+        (c - a)* u.y * (1.0 - u.x) +
+        (d - b) * u.x * u.y;
+}
+
+    out float v;
+
     void main() {
         mat4 model = getModel(gl_VertexID/6) * d.size[gl_VertexID/6];
         gl_Position = pv * model * vec4(verts[gl_VertexID % 6], 1.0);
+        vec3 p = (model * vec4(verts[gl_VertexID % 36], 1.0)).xyz;
 
         VertColor = vec4(uv[gl_VertexID % 6], 0.0, 1.0);
         vec2 offset = d.tex[gl_VertexID/6].xy;
         vec2 scale = d.tex[gl_VertexID/6].zw;
+
+        v = 0.8;
+        vec3 wind_dir = normalize((vec4(1.0, 0.0, 1.0, 0.0)).xyz);
+        v -= 0.3 * (2.0 * noise(p.xz/10.0 + 0.4 * time * wind_dir.xz) - 0.5);
 
         fragUV = (scale * uv[gl_VertexID % 6]) + offset;
 
@@ -289,6 +363,7 @@ var decor_shader = {
 
     in vec4 VertColor;
     in vec2 fragUV;
+    in float v;
 
     out vec4 fragColor;
 
@@ -297,6 +372,7 @@ var decor_shader = {
     void main() {
         //fragColor = VertColor;
         fragColor = texture(utex, fragUV);
+        fragColor.xyz *= v;
 
         //vec2 centered = fragUV - vec2(0.5, 0.5);
         //centered = centered * centered;
@@ -355,34 +431,61 @@ var grass_shader = {
             return fract((p3.x + p3.y) * p3.z);
         }
 
+    float random (in vec2 st) {
+        return fract(sin(dot(st.xy,
+            vec2(12.9898,78.233)))
+            * 43758.5453123);
+    }
+
+// 2D Noise based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise (in vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+
+    // Smooth Interpolation
+
+    // Cubic Hermine Curve.  Same as SmoothStep()
+    vec2 u = f*f*(3.0-2.0*f);
+    // u = smoothstep(0.,1.,f);
+
+    // Mix 4 coorners percentages
+    return mix(a, b, u.x) +
+        (c - a)* u.y * (1.0 - u.x) +
+        (d - b) * u.x * u.y;
+}
+
         void main() {
             vec3 p = (root * vec4(pos[gl_VertexID % 15], 1.0)).xyz;
             vec3 probe = (root * vec4(pos[0], 1.0)).xyz;
 
-            vec3 p_n = (vec4(pos[gl_VertexID % 15], 1.0)).xyz;
+            vec3 p_n = pos[gl_VertexID % 15];
 
             vec3 wind_dir = normalize((vec4(1.0, 0.0, 1.0, 0.0)).xyz);
 
-            float r = hash_WithoutSine(vec2(gl_InstanceID, gl_InstanceID));
+            float r = noise(probe.xz + vec2(10.0));
+            float sim = noise(probe.xz);
+            sim = sim * 0.5 + 0.5;
+
             if (r > 1.0) {
                 r = 1.0;
             } else if (r < 0.0) {
                 r = 0.0;
             }
 
-            if (p_n.y > 0.0) {
-                p_n.y += r * r * 0.3;
-            }
-
-            float t = time + 0.1 * dot(p, normalize(wind_dir));
+            float t = 1.5 * time + 0.5 * dot(p, normalize(wind_dir)) + 2.0 * r;
             float s = sin(t);
 
-            if (p_n.y < 1.0) {
-            } else if (p_n.y < 1.5) {
-                p -= s * s * 0.3 * wind_dir;
-            } else {
-                p -= s * s * 0.4 * wind_dir;
+            if (p_n.y > 0.0) {
+                p.y += sim * 1.0;
             }
+            p -= s * s * p_n.y * p_n.y * 0.5 * wind_dir;
 
             float scr = probe.x + scroll;
             if (scr < -25.0) scr = fract((scr + 25.0)/50.0) * 50.0 - 25.0;
@@ -404,7 +507,9 @@ var grass_shader = {
                 v += 0.3;
             }
 
-            //v = sin(fr) * sin(fr);
+            v -= 0.3 * (2.0 * noise(p.xz/10.0 + 0.4 * time * wind_dir.xz) - 0.5);
+
+            //v = sin(t) * sin(t);
 
         }
     `,
