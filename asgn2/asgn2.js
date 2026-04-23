@@ -19,11 +19,14 @@ var camera = {
 
 function addFlier() {
 
-    var core = addCube(0, [10, 10, 10], [0, 10, 0], [0.1, 0.1, 0.1], [0.0, 0.0, 0.0]);
+    var core = addCube(0, [2, 0.5, 0.5], [0, 10, 0], [0.5, 0.5, 0.5], [0.0, 0.0, 0.0]);
+    var head = addCube(core, [0.2, 0.1, 0.1], [1, 0.0, 0.0], [0.5, 0.5, 0.5], [-0.1, 0.0, 0.0]);
+    var lwing = addCube(core, [0.8,0.1,2.0], [0.2,0,0], [0.5, 0.5, 0.5], [0.0, 0.0, -1.0]);
+    var rwing = addCube(core, [0.8,0.1,2.0], [0.2,0,0], [0.5, 0.5, 0.5], [0.0, 0.0, 1.0]);
 
     fliers.push({
-        pos: new Vector3(),
-        vel: new Vector3(),
+        pos: new Vector3([50 * Math.random() - 25, 3, 50 * Math.random() - 25]),
+        vel: new Vector3([10, 0, 0]),
         handle: core,
     });
 
@@ -169,8 +172,10 @@ function main() {
     handles.core = addCube(0, [0, 0, 0], [0, 0, 0], WHITE, [0, 0, 0]);
     animal.cubes[handles.body].parent = handles.core + 1;
 
-    console.log(addCube(0, [10, 10, 10], [0, 10, 0], [0.1, 0.1, 0.1], [0.0, 0.0, 0.0]))
-    addFlier();
+    //Shelved for now, may return to later
+    //for (var i = 0; i < 10; i++) {
+    //    addFlier();
+    //}
 
     StringToHandle["body"] = handles.body;
     StringToHandle["rear"] = handles.rear;
@@ -288,6 +293,55 @@ var t_frac = 0;
 
 var t_time = 0;
 
+function updateFliers(dt) {
+    const speed = 10.0;
+
+    for (var i = 0; i < fliers.length; i++) {
+        var pos = fliers[i].pos;
+        var vel = fliers[i].vel;
+        const handle = fliers[i].handle;
+
+        if (pos.elements[0] > 25) {
+            vel.elements[0] -= speed * 0.4;
+        }
+        if (pos.elements[0] < -25) {
+            vel.elements[0] += speed * 0.4;
+        }
+        if (pos.elements[2] > 25) {
+            vel.elements[2] -= speed * 0.4;
+        }
+        if (pos.elements[2] < -25) {
+            vel.elements[2] += speed * 0.4;
+        }
+
+
+        var delta = new Vector3(vel.elements);
+        delta.normalize();
+        delta.mul(speed);
+        delta.mul(dt);
+        pos.add(delta);
+
+        animal.cubes[handle].pos = pos;
+
+        vel.elements[1] = 0.0;
+
+        var a1 = Math.atan2(vel.elements[2], vel.elements[0]);
+        var a2 = Math.atan2(vel.elements[0], vel.elements[1]);
+
+        a1 *= 180/Math.pi;
+        a2 *= 180/Math.pi;
+
+        animal.cubes[handle].rot.elements[0] = 0;
+        animal.cubes[handle].rot.elements[1] = 0;
+        animal.cubes[handle].rot.elements[2] = 0;
+
+        fliers[i].pos = pos;
+        fliers[i].vel = vel;
+    }
+
+
+}
+
 function updatePose(dt) {
     const frame_toggle = document.getElementById("frame-toggle").checked;
     var anim_name = document.getElementById("anim").value;
@@ -389,6 +443,8 @@ function tick(curr_time, prog, decor_prog, grass_prog, cubes, decor) {
     render(prog, decor_prog, grass_prog, cubes, decor);
 
     updatePose(dt);
+
+    updateFliers(dt);
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {

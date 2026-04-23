@@ -11,7 +11,7 @@ var DEFAULT_FRAG = `#version 300 es
 
 var cube_shader = {
     vert: `#version 300 es
-    precision mediump float;
+    precision highp float;
     out vec4 VertColor;
     out vec2 fragUV;
     out vec4 frag_stripe;
@@ -141,11 +141,11 @@ float noise (in vec2 st) {
 
 
     layout(std140) uniform cubes {
-        mat4 model[50];
-        mat4 size[50];
-        vec4 color[50];
-        vec4 stripe[50];
-        ivec4 parents[50];
+        mat4 model[100];
+        mat4 size[100];
+        vec4 color[100];
+        vec4 stripe[100];
+        ivec4 parents[100];
     };
 
     int getParent(int idx) {
@@ -205,7 +205,7 @@ float noise (in vec2 st) {
     }`,
 
     frag: `#version 300 es
-    precision mediump float;
+    precision highp float;
 
     in vec4 VertColor;
     in vec2 fragUV;
@@ -233,7 +233,7 @@ float noise (in vec2 st) {
 
 var decor_shader = {
     vert: `#version 300 es
-    precision mediump float;
+    precision highp float;
     out vec4 VertColor;
     out vec2 fragUV;
 
@@ -261,11 +261,11 @@ var decor_shader = {
     );
 
     layout(std140) uniform cubes {
-        mat4 model[50];
-        mat4 size[50];
-        vec4 color[50];
-        vec4 stripe[50];
-        ivec4 parents[50];
+        mat4 model[100];
+        mat4 size[100];
+        vec4 color[100];
+        vec4 stripe[100];
+        ivec4 parents[100];
     };
 
     layout(std140) uniform decor {
@@ -359,7 +359,7 @@ float noise (in vec2 st) {
     }`,
 
     frag: `#version 300 es
-    precision mediump float;
+    precision highp float;
 
     in vec4 VertColor;
     in vec2 fragUV;
@@ -387,7 +387,7 @@ float noise (in vec2 st) {
 
 var grass_shader = {
     vert: `#version 300 es
-        precision mediump float;
+        precision highp float;
         in mat4 root;
 
         uniform mat4 pv;
@@ -514,7 +514,7 @@ float noise (in vec2 st) {
         }
     `,
     frag: `#version 300 es
-        precision mediump float;
+        precision highp float;
         out vec4 fragColor;
         in float v;
 
