@@ -14,7 +14,7 @@ ehantman@ucsc.edu
     <p id = "frame" > </p>
     <p id = "fps" > </p>
 
-<canvas id="webgl" width="500" height="500">
+<canvas id="webgl" width="1000" height="500">
 Please use the browser supporting "canvas".
 </canvas>
 
@@ -29,6 +29,8 @@ Frame Number: <input id = "frame-num" type = "number" min = "0" size = "4"/>
 Display Frame: <input id = "frame-toggle" type = "checkbox" />
 Play Animation: <input id = "play-toggle" type = "checkbox" />
 Dynamic: <input id = "dynamic-toggle" type = "checkbox" />
+<div />
+Disable Grass: <input id = "grass-toggle" type = "checkbox" />
 
 <div>
 <select name = "body-part" id = "selected-part">
@@ -59,16 +61,87 @@ Dynamic: <input id = "dynamic-toggle" type = "checkbox" />
 <button id = "reset">Reset Part</button>
 <div />
 X Rotation: <input type = "range" min = "-180" max = "180" id = "xrot"></input>
-X Position: <input type = "range" min = "-3" max = "3" step = "0.1" id = "xpos"></input>
 <div />
 Y Rotation: <input type = "range" min = "-180" max = "180" id = "yrot"></input>
-Y Position: <input type = "range" min = "-3" max = "3" step = "0.1" id = "ypos"></input>
 <div />
 Z Rotation: <input type = "range" min = "-180" max = "180" id = "zrot"></input>
-Z Position: <input type = "range" min = "-3" max = "3" step = "0.1" id = "zpos"></input>
 </div>
 
-<div id = "pose-log"></div>
+
+<h1>Extra Info</h1>
+<p>
+The implementation was interesting. I decided to do the model transform
+computations. Basically I have a uniform buffer with all the matrices,
+and per vertex I do the matrix multiplies. If you had an exceptionally
+deep transform hierarchy this could be a performance concern, but I only
+use 5-6 levels at most, so it ends up being negligible performance wise.
+</p>
+<p>
+In addition to the cubes I also have a system where I can draw textured quads
+which use the same transform hierarchy. That is how I did the face and snout.
+</p>
+<p>
+For the animation I made a keyframe system. What I do is store the rotations of
+each body part for each frame. Then I blend between frames using linear
+interpolation. Ideally I'd actually set a different blend function for every
+pair of key frames but I thought it would add a ton of additional complexity
+for little benefit since I'm not a great animator.
+</p>
+<p>
+To use the animation system you simply pose the tiger in a keyframe, then
+you click Print Pose which will copy the pose information to the clipboard.
+I then just paste that into an array. To facillitate this I set up
+an euler angle system. I considered using quaternions but I think it would
+have made the ui for the system significantly worse.
+</p>
+<p>
+I also have a super basic state machine. When we reach the end of an interpolation,
+we select a new frame, and if the animation is complete I can transition to another
+animation. That is why there is a significant delay when getting the tiger to
+sit or stand.
+</p>
+<p>
+Finally I layer on some simple procedural animation. Each animation has a bob
+amplitude which controls how much the body bobs up and down. I also use
+this bob to make the neck and head bob up and down. For the tail I
+just use some sine waves with different phases to make the tail waggle in a few directions.
+</p>
+<p>
+For ambiance I thought it would be cool to add grass. Each grass blade has
+15 verts, it would probably be superior to use TRIANGLE_STRIP but I ended up
+not going with that since it ended up being overkill. I then used instanced
+rendering to render something on the order of 250,000 grass blades. The most
+expensive part of this system is the initial buffer allocation and data transfer,
+which can take a noticable amount of time. But after initialization the rendering
+itself it fairly trivial and takes at most 0.2ms on my system.
+</p>
+<p>
+The performance of the entire system was actually very good without doing any
+performance analysis or optimization. Throughout this project the performance
+never dropped below 60fps, and the frame time never grew beyond 1ms.
+</p>
+<p>
+I used some noise from the book of Shaders (the credit is in the code). Essentially
+it uses a hash of the xz position, which is scaled and then interpolated to produce
+value noise. That is then used to randomize the height. I also use the value noise
+with a different scale to darken both the tiger and grass and fake the kinds of shadows you'd
+see from clouds.
+</p>
+<p>
+Finally the grass animation is a sin wave which is evaluated by taking the dot product
+of the position and a wind direction. Then I push the verts of the grass forward
+based on the sin wave. The ideal way to do this would be to do a series of trig
+calculations which would cause the grass to rotate rather than shear but I didn't
+feel it was that necessary. The sin wave is advanced by a shader uniform passing in
+a time float.
+</p>
+<p>
+The last interesting thing is the scrolling. The scroll is done by passing in a scroll
+amount and a size. In the shader I modulo the scroll to be within the size, before
+applying them to the grass verts. This creates a really cool effect where the grass
+will be 'generated' on one side and 'destroyed' on the other.
+</p>
+
 
 <div />
     <script src="lib/webgl-utils.js"></script>
@@ -79,6 +152,5 @@ Z Position: <input type = "range" min = "-3" max = "3" step = "0.1" id = "zpos">
     <script src="data.js"></script>
     <script src="shaders.js"></script>
     <script src="asgn2.js"></script>
-
 </body>
 </html

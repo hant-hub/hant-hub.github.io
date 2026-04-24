@@ -62,16 +62,47 @@ function addDecor(parent, size, pos, rot, anchor, tex) {
 }
 
 const WHITE = [1, 1, 1];
-const ORANGE_WHITE = [1, 0.7, 0.5];
+const ORANGE_WHITE = [1, 0.8, 0.6];
 const BLACK = [0, 0, 0];
 const ORANGE = [1, 0.4, 0];
 
 var grass_verts = null;
-var grass_density = 15;
-var grass_x = 50;
-var grass_y = 50;
+var grass_density = 50;
+var grass_x = 70;
+var grass_y = 70;
 
 var num_grass = grass_density * grass_x * grass_y;
+
+async function plantGrass(ctx, buf) {
+    var elements = [];
+    var i = 0;
+    const block_size = 70000;
+
+    (function func() {
+        for (; i < grass_density * grass_x * grass_y/block_size;) {
+            for (var j = 0; j < block_size; j++) {
+                var idx = i * block_size + j;
+
+                var mat = new Matrix4();
+                mat.setTranslate(Math.random() * grass_x - (grass_x/2), -2.5, Math.random() * grass_y - (grass_y/2));
+                mat.rotate(50 * idx, 0, 1, 0);
+                mat.scale(0.1, 0.2, 0.5);
+
+                elements.push(...Array.from(mat.elements));
+            }
+
+            i++;
+            setTimeout(func, 0);
+            break;
+        }
+
+        if (i >= num_grass/block_size) {
+            if (helpers.SubVerts(ctx, buf, 0, elements)) {
+                console.log("failed");
+            }
+        }
+    })(ctx, buf, 0);
+}
 
 function main() {
     var cube_prog = helpers.CompileShaders(ctx, cube_shader.vert, cube_shader.frag);
@@ -86,24 +117,10 @@ function main() {
     gl.vertexAttribDivisor(1, 1);
     gl.vertexAttribDivisor(2, 1);
     gl.vertexAttribDivisor(3, 1);
-    helpers.ResizeVertBuffer(ctx, grass_verts, 64 * 5000);
+    helpers.ResizeVertBuffer(ctx, grass_verts, 64 * num_grass);
     console.log(num_grass);
 
-    var elements = [];
-    for (var i = 0; i < grass_density * grass_x * grass_y; i++) {
-        var mat = new Matrix4();
-        mat.setTranslate(Math.random() * 50 - 25, -2.5, Math.random() * 50 - 25);
-        mat.rotate(50 * i, 0, 1, 0);
-        mat.scale(0.2, 1.0, 1.0);
-
-        elements.push(...Array.from(mat.elements));
-    }
-
-    console.log(elements.length);
-    if (helpers.SubVerts(ctx, grass_verts, 0, elements)) {
-        console.log("failed");
-    }
-
+    plantGrass(ctx, grass_verts); 
 
     var texture = helpers.LoadTexture(ctx, "img/decor.png");
 
@@ -119,7 +136,7 @@ function main() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    addCube(0, [10, 0.5, 10], [0, -4, 0], WHITE, [0, 0, 0]);
+    addCube(0, [grass_x, 0.5, grass_y], [0, -2.75, 0], [0.0, 0.2, 0.0], [0, 0, 0]);
     handles.body = addCube(0, [2, 1.5, 1], [0, 0, 0], ORANGE, [0, 0, 0], [1, 0, 1, 0.5]);
     handles.neck = addCube(handles.body, [1, 0.8, 0.8], [0.5, 0.40, 0], ORANGE, [-0.5, 0, 0.0], [1, 0, 0.5, 0.5]);
     handles.head = addCube(handles.neck, [0.5, 1, 1.0], [0.5, 0, 0], ORANGE, [-0.25, -0.1, 0], [1, 0, 0.5, 0.8]);
@@ -196,7 +213,7 @@ function main() {
     StringToHandle["tail"] = handles.tail[0];
 
     ctx.canvas.onmousemove = function(ev) { onMouseMove(ev); };
-    ctx.canvas.onwheel = function(ev) { onMouseWheel(ev); };
+    ctx.canvas.onwheel = function(ev) { onMouseWheel(ev);  return false;};
     ctx.canvas.onclick = function(ev) {
         if (!ev.shiftKey) {
             return;
@@ -251,7 +268,7 @@ async function printFrame() {
 }
 
 function blendCube(handle, t, rot1, rot2) {
-    t = 3 * (t * t) - 2 * (t * t * t);
+    //t = 3 * (t * t) - 2 * (t * t * t);
 
     var rdiff = new Vector3();
     rdiff.add(rot2);
@@ -448,14 +465,16 @@ function tick(curr_time, prog, decor_prog, grass_prog, cubes, decor) {
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {
-        const dt = (endTime - startTime) / 1000; //dt is in seconds
-        avg_dt = avg_dt * 0.95 + 0.05 * dt; //blend dt to get average
+        {
+            const dt = (endTime - startTime) / 1000; //dt is in seconds
+            avg_dt = avg_dt * 0.95 + 0.05 * dt; //blend dt to get average
 
-        //convert sec to ms, then round to 2 places
-        document.getElementById("frame").innerText = `UpdateTime: ${Math.round(avg_dt * 1000 * 100) / 100} ms`;
+            //convert sec to ms, then round to 2 places
+            document.getElementById("frame").innerText = `Rendertime: ${Math.round(avg_dt * 1000 * 100) / 100} ms`;
+        }
 
         //calculate fps, then round to 2 places
-        document.getElementById("fps").innerText = `FPS: ${Math.round((1.0 / avg_dt) * 100) / 100}`;
+        document.getElementById("fps").innerText = `FPS: ${Math.round((1.0 / dt) * 100) / 100}`;
     }
 
     requestAnimationFrame((dt) => {
@@ -467,7 +486,7 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
     var mat = new Matrix4();
 
     mat.setIdentity();
-    mat.perspective(90, 1, 0.5, 1000.0);
+    mat.perspective(90, 2, 0.5, 1000.0);
 
     mat.translate(0, 0, -camera.dist);
     mat.rotate(camera.rot.elements[0], 1, 0, 0);
@@ -483,7 +502,8 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
 
     helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.pv, mat.elements);
     helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.time, time/1000);
-    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.scroll, -1.4 * t_time);
+    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.scroll, -3.0 * t_time);
+    helpers.SetUniform(ctx, grass_prog, grass_prog.uniform_map.size, new Float32Array([grass_x, grass_y]));
     //console.log(-2 * time/1000);
     //mat.invert();
     //helpers.SetUniform(ctx, prog, 1, mat.elements);
@@ -580,6 +600,11 @@ function render(prog, decor_prog, grass_prog, cubes, decor) {
     gl.disable(gl.CULL_FACE);
 
     helpers.Draw(ctx, decor_prog, 6 * animal.decor.length);
+
+    if (document.getElementById("grass-toggle").checked) {
+        return;
+    }
+
 
     if (ctx.state.prog !== grass_prog) {
         gl.useProgram(grass_prog.p);

@@ -393,6 +393,7 @@ var grass_shader = {
         uniform mat4 pv;
         uniform float time;
         uniform float scroll;
+        uniform vec2 size;
 
         vec3 pos[] = vec3[](
             //bottom segment
@@ -479,17 +480,20 @@ float noise (in vec2 st) {
                 r = 0.0;
             }
 
-            float t = 1.5 * time + 0.5 * dot(p, normalize(wind_dir)) + 2.0 * r;
-            float s = sin(t);
+            float t = 2.0 * time + 0.5 * dot(p, normalize(wind_dir)) + 2.0 * r;
+            float s = asin(0.5 * sin(t) + 0.5);
 
             if (p_n.y > 0.0) {
                 p.y += sim * 1.0;
             }
-            p -= s * s * p_n.y * p_n.y * 0.5 * wind_dir;
+
+            float bend = s * p_n.y * 0.2;
+            p -= bend * wind_dir;
+            p.y -= bend; 
 
             float scr = probe.x + scroll;
-            if (scr < -25.0) scr = fract((scr + 25.0)/50.0) * 50.0 - 25.0;
-            if (scr > 25.0) scr = fract((scr + 25.0)/50.0) * 50.0 - 25.0;
+            if (scr < -size.x/2.0) scr = fract((scr + size.x/2.0)/size.x) * size.x - (size.x/2.0);
+            if (scr > size.x/2.0) scr = fract((scr + size.x/2.0)/size.x) * size.x - (size.x/2.0);
             p.x += scr - probe.x;
 
 

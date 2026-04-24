@@ -346,6 +346,9 @@ var helpers = function() {
             case gl.FLOAT: {
                 gl.uniform1f(info.location, value);
             } break;
+            case gl.FLOAT_VEC2: {
+                gl.uniform2f(info.location, value[0], value[1]);
+            } break;
             case gl.FLOAT_MAT4: {
                 gl.uniformMatrix4fv(info.location, false, value);
             } break;
