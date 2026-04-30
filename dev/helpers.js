@@ -51,33 +51,65 @@ var helpers = function() {
                     type: gl.FLOAT,
                     count: 1,
                     size: 4,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC2:
                 return {
                     type: gl.FLOAT,
                     count: 2,
                     size: 8,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC3:
                 return {
                     type: gl.FLOAT,
                     count: 3,
                     size: 12,
+                    dup: 1,
                 };
             case gl.FLOAT_VEC4:
                 return {
                     type: gl.FLOAT,
                     count: 4,
                     size: 16,
+                    dup: 1,
+                };
+            case gl.FLOAT_MAT4:
+                return {
+                    type: gl.FLOAT,
+                    count: 4,
+                    size: 16,
+                    dup: 4,
                 };
             default:
                 console.log("Unknown Attr Type");
+                console.log(type);
                 return {
                     type: gl.FLOAT,
                     count: 0,
                     size: 0,
                 };
         }
+    }
+
+
+    async function LoadShaders(ctx, vert, frag) {
+
+        var vdata;
+        var fdata;
+        try {
+            vdata = await fetch(vert);
+            fdata = await fetch(frag);
+
+            vdata = await vdata.text();
+            fdata = await fdata.text();
+        } catch (error) {
+            console.log(error.message);
+        }
+
+
+
+        return CompileShaders(ctx, vdata, fdata);
     }
 
     /** 
@@ -111,38 +143,57 @@ var helpers = function() {
         var stride = 0;
         var count = 0;
 
-        const numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        var numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        var builtins = 0;
         for (var i = 0; i < numAttribs; i++) {
             const info = gl.getActiveAttrib(program, i);
+
+            if (info.name == "gl_VertexID") {//skip builtin vars
+                builtins++;
+                continue;
+            }
+
+            if (info.name == "gl_InstanceID") {//skip builtin vars
+                builtins++;
+                continue;
+            }
+
             const location = gl.getAttribLocation(program, info.name);
             const tinfo = ParseGeneralType(gl, info.type);
 
-            attr_infos.push({
-                location: location,
-                type: tinfo.type,
-                count: tinfo.count,
-                stride: 0,
-                offset: stride,
-            });
-
-            stride += tinfo.size;
-            count += tinfo.count;
+            for (var j = 0; j < tinfo.dup; j++) {
+                attr_infos.push({
+                    location: location + j,
+                    type: tinfo.type,
+                    count: tinfo.count,
+                    stride: 0,
+                    offset: stride,
+                });
+                stride += tinfo.size;
+                count += tinfo.count;
+            }
         }
 
-        for (var i = 0; i < numAttribs; i++) {
-            attr_infos[i].stride = stride;
+        numAttribs -= builtins;
+
+        for (var j = 0; j < attr_infos.length; j++) {
+            attr_infos[j].stride = stride;
         }
 
         //parse Uniforms
         var uniforms = [];
+        var mapping = {};
         const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-        for (var i = 0; i < numUniforms; i++) {
-            const uinfo = gl.getActiveUniform(program, i);
+        for (var j = 0; j < numUniforms; j++) {
+            const uinfo = gl.getActiveUniform(program, j);
             const location = gl.getUniformLocation(program, uinfo.name);
+            console.log(uinfo);
             if (location) {
                 uniforms.push({
                     location: location,
+                    type: uinfo.type,
                 });
+                mapping[uinfo.name] = uniforms.length - 1;
             }
         }
 
@@ -152,17 +203,20 @@ var helpers = function() {
         );
 
         var block_data = [];
-        for (var i = 0; i < num_blocks; i++) {
+        var block_map = {};
+        for (var j = 0; j < num_blocks; j++) {
+
+            const block_name = gl.getActiveUniformBlockName(program, j);
 
             const active_indicies = gl.getActiveUniformBlockParameter(
                 program,
-                i,
+                j,
                 gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
             );
 
             const blockSize = gl.getActiveUniformBlockParameter(
                 program,
-                i,
+                j,
                 gl.UNIFORM_BLOCK_DATA_SIZE
             );
 
@@ -172,7 +226,9 @@ var helpers = function() {
                 gl.UNIFORM_OFFSET,
             );
 
+            block_map[block_name] = j;
             block_data.push({
+                name: block_name,
                 size: blockSize,
                 offsets: uniform_offsets,
             });
@@ -181,11 +237,12 @@ var helpers = function() {
         console.log(block_data);
 
 
-
         return {
             p: program,
             attrs: attr_infos,
             uniform_loc: uniforms,
+            uniform_map: mapping,
+            block_map: block_map,
             uniform_blocks: block_data,
             count: count,
         };
@@ -214,6 +271,7 @@ var helpers = function() {
             cap: 0,
             div: prog.count,
             vert_size: prog.attrs[0].stride,
+            inv_divisor: 1,
         };
 
         ctx.state.vertexbuffer = vert;
@@ -246,6 +304,12 @@ var helpers = function() {
         return out;
     }
 
+    function BindUniformBuffer(ctx, prog, buffer, idx) {
+        var gl = ctx.gl;
+        gl.uniformBlockBinding(prog.p, idx, buffer.bindpoint);
+    }
+
+
     function UploadUniformBuffer(ctx, buffer, data) {
         var gl = ctx.gl;
 
@@ -262,7 +326,7 @@ var helpers = function() {
         return 0;
     }
 
-    function UploadUniform(ctx, buffer, idx, data) {
+    function UploadUniform(ctx, buffer, type, idx, data) {
         var gl = ctx.gl;
 
         if (ctx.state.uniformbuffer !== buffer) {
@@ -270,12 +334,51 @@ var helpers = function() {
             ctx.state.uniformbuffer = buffer;
         }
 
+        var buf = null;
+
+        switch (type) {
+            case 0:
+                buf = Float32Array.from(data);
+                break;
+            case 1:
+                buf = Int32Array.from(data);
+                break;
+        }
+
         gl.bufferSubData(gl.UNIFORM_BUFFER, 
             buffer.offsets[idx],
-            Float32Array.from(data)
+            buf
         );
 
         return 0;
+    }
+
+    function SetUniform(ctx, prog, index, value) {
+        var gl = ctx.gl;
+
+        if (ctx.state.prog !== prog) {
+            gl.useProgram(prog.p);
+            ctx.state.prog = prog;
+        }
+
+        const info = prog.uniform_loc[index];
+
+        switch (info.type) {
+            case gl.FLOAT: {
+                gl.uniform1f(info.location, value);
+            } break;
+            case gl.FLOAT_VEC2: {
+                gl.uniform2f(info.location, value[0], value[1]);
+            } break;
+            case gl.FLOAT_MAT4: {
+                gl.uniformMatrix4fv(info.location, false, value);
+            } break;
+            default: {
+                console.log("Unknown Uniform Type!");
+                return;
+            }
+        }
+        
     }
 
     function UploadVertBuffer(ctx, buffer, vertices) {
@@ -335,7 +438,7 @@ var helpers = function() {
 
         if (ctx.state.vertexbuffer !== buffer) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
-            gl.bindVertexArray(buffer.vao);
+            //gl.bindVertexArray(buffer.vao);
             ctx.state.vertexbuffer = buffer;
         }
 
@@ -353,6 +456,58 @@ var helpers = function() {
         return 0;
     }
 
+    async function LoadTexture(ctx, file) {
+        var gl = ctx.gl;
+
+        /*
+            Borrowed from the MDN docs
+        */
+        
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 1;
+        const height = 1;
+        const border = 0;
+        const srcFormat = gl.RGBA;
+        const srcType = gl.UNSIGNED_BYTE;
+        const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            level,
+            internalFormat,
+            width,
+            height,
+            border,
+            srcFormat,
+            srcType,
+            pixel,
+        );
+
+        var img = new Image();
+        img.src = file;
+        img.onload = () => {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                level,
+                internalFormat,
+                srcFormat,
+                srcType,
+                img,
+            );
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        return texture;
+    }
+
     function DrawBuffer(ctx, prog, buffer) {
         var gl = ctx.gl;
 
@@ -367,13 +522,27 @@ var helpers = function() {
             ctx.state.vertexbuffer = buffer;
         }
 
-        gl.drawArrays(gl.TRIANGLES, 0, buffer.size);
+        gl.drawArrays(gl.TRIANGLES, 0, buffer.size * buffer.inv_divisor);
+    }
+
+    function Draw(ctx, prog, num_verts) {
+        var gl = ctx.gl;
+
+        if (ctx.state.prog !== prog) {
+            gl.useProgram(prog.p);
+            ctx.state.prog = prog;
+        }
+
+        gl.drawArrays(gl.TRIANGLES, 0, num_verts);
     }
 
     return {
         InitGL: InitGL,
+        LoadShaders: LoadShaders,
         CompileShaders: CompileShaders,
+        LoadTexture: LoadTexture,
         CreateUniformBuffer: CreateUniformBuffer,
+        BindUniformBuffer: BindUniformBuffer,
         CreateVertBuffer: CreateVertBuffer,
         ResizeVertBuffer: ResizeVertBuffer,
         PushVerts: PushVerts,
@@ -381,6 +550,8 @@ var helpers = function() {
         UploadVertBuffer: UploadVertBuffer,
         UploadUniformBuffer: UploadUniformBuffer,
         UploadUniform: UploadUniform,
+        SetUniform: SetUniform,
         DrawBuffer: DrawBuffer,
+        Draw: Draw,
     };
 }();
