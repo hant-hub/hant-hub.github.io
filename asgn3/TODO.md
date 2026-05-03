@@ -7,9 +7,13 @@
     - [X] Alloc Uniform Buffer (maybe shared?)
     - [X] Bind Uniform Buffer to Block
 - [X] GLSL Files
+- [ ] Voxel Meshing
+    - [ ] no culling
+    - [ ] naive
+    - [ ] greedy?
 - [ ] 3D textures
-    - [ ] creation
-    - [ ] upload
+    - [X] creation
+    - [X] upload
     - [ ] binding
 - [ ] Textures
     - [X] Create Texture

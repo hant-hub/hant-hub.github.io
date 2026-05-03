@@ -656,7 +656,7 @@ var helpers = function() {
         );
     }
 
-    function DrawMultiVert(ctx, prog, buffer) {
+    function DrawMultiVert(ctx, prog, buffer, strip) {
         var gl = ctx.gl;
 
         if (ctx.state.prog !== prog) {
@@ -669,7 +669,7 @@ var helpers = function() {
             ctx.state.vertexbuffer = buffer;
         }
 
-        gl.drawArrays(gl.TRIANGLES, 0, buffer.size * buffer.inv_divisor);
+        gl.drawArrays(strip ? gl.LINE_STRIP : gl.TRIANGLES, 0, buffer.size * buffer.inv_divisor);
     }
 
     function DrawBuffer(ctx, prog, buffer) {
