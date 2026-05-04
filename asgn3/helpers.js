@@ -25,6 +25,11 @@ var helpers = function() {
             }
         }
 
+        gl.ext = {
+            aniso : gl.getExtension("EXT_texture_filter_anisotropic"),
+        };
+
+
         if (!gl) {
             console.log('Failed to get the rendering context for WebGL');
             return;
@@ -616,6 +621,13 @@ var helpers = function() {
             );
 
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+            console.log(gl.ext.aniso);
+            if (gl.ext.aniso) {
+                const max = gl.getParameter(gl.ext.aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+                gl.texParameterf(gl.TEXTURE_2D, gl.ext.aniso.TEXTURE_MAX_ANISOTROPY_EXT, max);
+            }
 
             gl.generateMipmap(gl.TEXTURE_2D);
         }

@@ -15,123 +15,153 @@ function IndextoXYZ(index) {
 /*
     Meshes a 32x32x32 chunk
 */
-function MeshChunk(pos_buf, uv_buf, data) {
+    function MeshChunk(pos_buf, uv_buf, data) {
 
-    const pos = [
-        0, 0, 0,
-        1, 0, 0,
-        0, 1, 0,
-        
-        1, 1, 0,
-        1, 0, 0,
-        0, 1, 0,
-    ];
-    const uv = [
-        0, 0,
-        1, 0,
-        0, 1,
+        for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
+            const [x, y, z] = IndextoXYZ(idx);
 
-        1, 1,
-        1, 0,
-        0, 1,
-    ];
+            //skip empty voxels
+            if (!data[idx]) {
+                continue;
+            }
 
-    for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
-        const [x, y, z] = IndextoXYZ(idx);
+            //build geometry
 
-        //skip empty voxels
-        if (!data[idx]) {
-            continue;
+            //flip coords based on face orientation
+
+            //+x
+            if (x >= 31 || !data[XYZtoIndex(x + 1, y, z)]) {
+                pos_buf.push(
+                    x + 1, 1 + y, 1 + z,
+                    x + 1, 1 + y, 0 + z,
+                    x + 1, 0 + y, 0 + z,
+
+                    x + 1, 0 + y, 0 + z,
+                    x + 1, 0 + y, 1 + z,
+                    x + 1, 1 + y, 1 + z
+                );
+
+                uv_buf.push(
+                    1, 1,
+                    1, 0,
+                    0, 0,
+                    0, 0,
+                    0, 1,
+                    1, 1,
+                );
+            }
+
+
+            //-x
+            if (x <= 0 || !data[XYZtoIndex(x - 1, y, z)]) {
+                pos_buf.push(
+                    0 + x, 0 + y, 1 + z,
+                    0 + x, 1 + y, 0 + z,
+                    0 + x, 1 + y, 1 + z,
+
+                    0 + x, 1 + y, 0 + z,
+                    0 + x, 0 + y, 1 + z,
+                    0 + x, 0 + y, 0 + z
+                );
+
+                uv_buf.push(
+                    0, 1,
+                    1, 0,
+                    1, 1,
+                    1, 0,
+                    0, 1,
+                    0, 0,
+                );
+            }
+
+            //+y
+            if (y >= 31 || !data[XYZtoIndex(x, y + 1, z)]) {
+                pos_buf.push(
+                    0 + x, y + 1, 0 + z,
+                    1 + x, y + 1, 0 + z,
+                    1 + x, y + 1, 1 + z,
+
+                    1 + x, y + 1, 1 + z,
+                    0 + x, y + 1, 1 + z,
+                    0 + x, y + 1, 0 + z
+                );
+
+                uv_buf.push(
+                    0, 0,
+                    1, 0,
+                    1, 1,
+                    1, 1,
+                    0, 1,
+                    0, 0,
+                );
+            } 
+
+            //-y
+            if (y <= 0 || !data[XYZtoIndex(x, y - 1, z)]) {
+                pos_buf.push(
+                    0 + x, y + 0, 0 + z,
+                    1 + x, y + 0, 1 + z,
+                    1 + x, y + 0, 0 + z,
+
+                    1 + x, y + 0, 1 + z,
+                    0 + x, y + 0, 0 + z,
+                    0 + x, y + 0, 1 + z
+                );
+
+                uv_buf.push(
+                    0, 0,
+                    1, 1,
+                    1, 0,
+                    1, 1,
+                    0, 0,
+                    0, 1,
+                );
+            }
+
+
+            //+z
+            if (z >= 31 || !data[XYZtoIndex(x, y, z + 1)]) {
+                pos_buf.push(
+                    0 + x, 0 + y, z + 1,
+                    1 + x, 1 + y, z + 1,
+                    1 + x, 0 + y, z + 1,
+
+                    1 + x, 1 + y, z + 1,
+                    0 + x, 0 + y, z + 1,
+                    0 + x, 1 + y, z + 1
+                );
+
+                uv_buf.push(
+                    0, 0,
+                    1, 1,
+                    1, 0,
+                    1, 1,
+                    0, 0,
+                    0, 1,
+                );
+            }
+
+            //-z
+            if (z <= 0 || !data[XYZtoIndex(x, y, z - 1)]) {
+                pos_buf.push(
+                    0 + x, 0 + y, z + 0,
+                    1 + x, 0 + y, z + 0,
+                    1 + x, 1 + y, z + 0,
+
+                    1 + x, 1 + y, z + 0,
+                    0 + x, 1 + y, z + 0,
+                    0 + x, 0 + y, z + 0
+                );
+
+                uv_buf.push(
+                    0, 0,
+                    1, 0,
+                    1, 1,
+                    1, 1,
+                    0, 1,
+                    0, 0,
+                );
+            }
         }
 
-        //build geometry
-
-        //flip coords based on face orientation
-
-        //+x
-        if (true || x >= 31 || pos_buf[XYZtoIndex(x + 1, y, z)] == 0) {
-            console.log("one");
-            pos_buf.push(
-                x + 1, 1 + y, 1 + z,
-                x + 1, 1 + y, 0 + z,
-                x + 1, 0 + y, 0 + z,
-
-                x + 1, 0 + y, 0 + z,
-                x + 1, 0 + y, 1 + z,
-                x + 1, 1 + y, 1 + z
-            );
-        }
-
-
-        //-x
-        if (true || x <= 0 || pos_buf[XYZtoIndex(x - 1, y, z)] == 0) {
-            console.log("two");
-            pos_buf.push(
-                0 + x, 0 + y, 1 + z,
-                0 + x, 1 + y, 0 + z,
-                0 + x, 1 + y, 1 + z,
-
-                0 + x, 1 + y, 0 + z,
-                0 + x, 0 + y, 1 + z,
-                0 + x, 0 + y, 0 + z
-            );
-        }
-
-        //+y
-         if (true || y >= 31 || pos_buf[XYZtoIndex(x, y + 1, z)] == 0) {
-            console.log("hit");
-            pos_buf.push(
-                0 + x, y + 1, 0 + z,
-                1 + x, y + 1, 0 + z,
-                1 + x, y + 1, 1 + z,
-                       
-                1 + x, y + 1, 1 + z,
-                0 + x, y + 1, 1 + z,
-                0 + x, y + 1, 0 + z
-            );
-        }
-
-        //-y
-         if (true || y <= 0 || pos_buf[XYZtoIndex(x, y - 1, z)] == 0) {
-            pos_buf.push(
-                0 + x, y + 0, 0 + z,
-                1 + x, y + 0, 1 + z,
-                1 + x, y + 0, 0 + z,
-
-                1 + x, y + 0, 1 + z,
-                0 + x, y + 0, 0 + z,
-                0 + x, y + 0, 1 + z
-            );
-        }
-        
-
-        //+z
-         if (true || z >= 31 || pos_buf[XYZtoIndex(x, y, z + 1)] == 0) {
-            pos_buf.push(
-                0 + x, 0 + y, z + 1,
-                1 + x, 1 + y, z + 1,
-                1 + x, 0 + y, z + 1,
-
-                1 + x, 1 + y, z + 1,
-                0 + x, 0 + y, z + 1,
-                0 + x, 1 + y, z + 1
-            );
-        }
-
-        //-z
-         if (true || z <= 0 || pos_buf[XYZtoIndex(x, y, z - 1)] == 0) {
-            pos_buf.push(
-                0 + x, 0 + y, z + 0,
-                1 + x, 0 + y, z + 0,
-                1 + x, 1 + y, z + 0,
-
-                1 + x, 1 + y, z + 0,
-                0 + x, 1 + y, z + 0,
-                0 + x, 0 + y, z + 0
-            );
-        }
-
-        if (idx >= 100) break;
     }
-
-}

@@ -8,8 +8,8 @@
     - [X] Bind Uniform Buffer to Block
 - [X] GLSL Files
 - [ ] Voxel Meshing
-    - [ ] no culling
-    - [ ] naive
+    - [X] no culling
+    - [X] naive
     - [ ] greedy?
 - [ ] 3D textures
     - [X] creation
