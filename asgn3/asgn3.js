@@ -113,8 +113,8 @@ async function main() {
     ctx.canvas.onmousemove = function(ev) { return on_move(ev); };
     ctx.canvas.onwheel = function(ev) { on_wheel(ev);  return false;};
     ctx.canvas.onmousedown = on_click;
-    document.addEventListener("keydown", function(ev) { on_key_down(ev);});
-    document.addEventListener("keyup", function(ev) { on_key_up(ev);});
+    document.addEventListener("keydown", function(ev) { on_key_down(ev); return false;});
+    document.addEventListener("keyup", function(ev) { on_key_up(ev); return false;});
 
     document.getElementById("cam").onclick = () => {
         camera.dir = new Vector3([0, 0, 1]);
@@ -280,6 +280,8 @@ function on_key_up(ev) {
 }
 
 function on_key_down(ev) {
+
+    ev.preventDefault();
     switch (ev.key.toLowerCase()) {
         case 'w': {
             input_state.move.w = true;
