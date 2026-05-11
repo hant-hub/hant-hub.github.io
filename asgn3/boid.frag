@@ -7,7 +7,7 @@ out vec4 fragColor;
 
 void main() {
     //fragColor = texture(utex, uv*0.3);  
-    fragColor = vec4(0.5);
+    fragColor = vec4(0.4, 0.2, 0.2, 1.0);
 
     vec2 center = uv - vec2(0.5);
     center = center * center;

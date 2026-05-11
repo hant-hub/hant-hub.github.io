@@ -24,8 +24,6 @@ var camera = {
 var voxel_data = [];
 var chunks = {};
 
-
-
 var mesh1 = {
     pos: [],
     uv: []
@@ -42,7 +40,7 @@ var vox_prog = null;
 var sky_prog = null;
 var boid_prog = null;
 
-var num_boids = 1;
+var num_boids = 500;
 var boids = [];
 var boid_pos = null;
 
@@ -78,9 +76,7 @@ async function main() {
     gl.vertexAttribDivisor(2, 1);
     gl.vertexAttribDivisor(3, 1);
     helpers.ResizeVertBuffer(ctx, boid_pos, 64 * num_boids);
-
-    var id = new Matrix4();
-    helpers.SubVerts(ctx, boid_pos, 0, id.elements);
+    InitBoids(camera, boids, num_boids);
 
     //var vox = helpers.Create3DTex(ctx);
     //helpers.Upload3DData(ctx, vox, voxData, 2, 2, 2); 
@@ -240,6 +236,10 @@ async function on_click(ev) {
                         1,
                         chunks);
                 }
+            } break;
+        case "lazer":
+            {
+                lazer(camera, boids, chunks);
             } break;
     }
 
@@ -450,6 +450,7 @@ function tick(curr_time, prog, buf) {
     helpers.SetUniform(ctx, sky_prog, sky_prog.uniform_map.pv, pv.elements);
     helpers.SetUniform(ctx, sky_prog, sky_prog.uniform_map.pos, camera.pos.elements);
 
+    UpdateBoids(ctx, camera, boid_pos, boids);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -461,7 +462,7 @@ function tick(curr_time, prog, buf) {
 
     gl.disable(gl.DEPTH_TEST);
 
-    //helpers.Draw(ctx, sky_prog, 6 * 6);
+    helpers.Draw(ctx, sky_prog, 6 * 6);
 
     gl.enable(gl.DEPTH_TEST);
 
@@ -481,7 +482,7 @@ function tick(curr_time, prog, buf) {
                 value = chunks[JSON.stringify(chunkID)];
 
                 helpers.SetUniform(ctx, prog, prog.uniform_map.chunk_pos, [chunkID.chunkx * 32, chunkID.chunky * 32, chunkID.chunkz * 32]);
-                //helpers.DrawMultiVert(ctx, prog, value.buffer, false);
+                helpers.DrawMultiVert(ctx, prog, value.buffer, false);
             }
         }
     }

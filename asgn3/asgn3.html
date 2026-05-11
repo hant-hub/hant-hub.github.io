@@ -23,6 +23,7 @@ ehantman@ucsc.edu
         <select name = "Action" id = "action">
             <option value = "place">Place Block</option>
             <option value = "ray">Cast Ray</option>
+            <option value = "lazer">Shoot Lazer</option>
         </select>
         Speed: <input type = "range" min = "0" max = "10" step=".1" id = "speed"></input>
 
@@ -33,8 +34,53 @@ ehantman@ucsc.edu
         <script src="lib/cuon-matrix-cse160.js"></script>
         <script src="helpers.js"></script>
         <script src="mesher.js"></script>
+        <script src="boid.js"></script>
         <script src="voxel.js"></script>
         <script src="asgn3.js"></script>
+
+        <p>
+        The three place modes are place block, where left click places a block and
+        right click removes a block. Cast Ray which places a line of blocks 100 blocks
+        long (doesn't stop at filled blocks). And Shoot Lazer, which clears a 3 block
+        radius around a ray, and pushes boids out of the way.
+        </p>
+
+        <p>
+        So this was the most work I've done for one of these assignments.
+        The world is infinite in 3 directions and uses 3D value noise based on
+        the noise chapter of the Book of Shaders, although the core noise algorithm
+        is just some xors and multiplies I threw together, basically just xors and
+        multiplying by a prime.
+        </p>
+
+        <p>
+        The world is generated on demand, in a 2x2x2 chunk region, with each chunk being
+        32x32x32. Chunks are marked dirty when modified, all other chunks will be deleted
+        when they are further than 2 chunks from the camera.
+        </p>
+
+        <p>
+        I also implemented the Digital Differential Analyzer which allows for O(n) efficient
+        voxel raycasts. Its pretty neat, you essentially do some easy precalculation and then
+        you just do comparisons and additions. This allows for large reach and also the ray
+        and lazer place modes.
+        </p>
+
+        <p>
+        In addition I added a simple boid simulation on top. The boids don't really interact
+        with the voxel grid because I ran out of time and effort. The ideal way to do this would
+        be to have each boid do a raycast to check for collisions and turn out of the way, but
+        I have a super janky version which samples the underlying value noise and tries to avoid
+        areas where the noise values are too close to the threshhold. The boid movement is noticably
+        chunky, this is because I only update boids on every other frame in order to allow for
+        slightly more boids. It kind of worked, although because I don't use any spatial data structures
+        for the boids the number of boids is still fairly low, and is the majority of the frame time.
+        </p>
+
+        <p>
+        The lazer mode will clear out a large region of voxels in a ray, as well as push boids in
+        that ray away as if there were an invisible push, because I think it was cool.
+        </p>
 
 </body>
 </html

@@ -1,0 +1,2 @@
+class Model{constructor(t,e){this.filePath=e,this.color=[1,1,1,1],this.matrix=new Matrix4,this.getFileContent()}async parseModel(t){console.log(t)}render(t,e){}async getFileContent(){try{let t=await fetch(this.filePath);if(!t.ok)throw Error(`Could not load file "${this.filePath}". Are you sure the file name/path are correct?`);let e=await t.text();this.parseModel(e)}catch(t){throw Error(`Something went wrong when loading ${url}. Error: ${t}`)}}}
+//# sourceMappingURL=lab4.7abaa40c.js.map

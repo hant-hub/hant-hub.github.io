@@ -4,12 +4,12 @@ function noise(x, y, z) {
 
     var result = 49817;
     result ^= x;
-    result ^= result << 4;
+    result ^= result >> 4;
     result ^= y;
-    result ^= result >> 16;
+    result ^= result >> 4;
     result *= 7;
     result ^= z;
-    result ^= result << 24;
+    result ^= result << 4;
     result *= 7;
 
     return (result/1000.0) % 1;
@@ -22,7 +22,7 @@ function step(t, a, b) {
 }
 
 //value noise, trilinear blend between 8 samples
-var scale = 8;
+var scale = 16;
 function valueNoise(x, y, z) {
 
     var fx = Math.floor(x/scale);

@@ -1,0 +1,2 @@
+let gl=setupWebGL(),program=connectVariablesToGLSL(gl);gl.clearColor(0,0,0,1),gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);let teapot=new Model(gl,"teapot.obj");function renderAllShapes(e){gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT),teapot.render(),gl.uniformMatrix4fv(program.u_ProjectionMatrix,!1,projectionMatrix.elements),gl.uniformMatrix4fv(program.u_ViewMatrix,!1,viewMatrix.elements),gl.uniform3fv(program.u_CameraPos,camera.eye),requestAnimationFrame(renderAllShapes)}renderAllShapes();
+//# sourceMappingURL=lab4.87833246.js.map
