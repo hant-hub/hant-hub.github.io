@@ -19,6 +19,19 @@
     - [X] Create Texture
     - [X] Upload Image Data
     - [ ] Bind Textures
+- [X] Voxel helpers
+    - [X] Ray casting
+    - [X] block placing
+    - [X] block deletion
+- [X] World Gen
+    - [X] Correct noise
+    - [X] Chunk Grid
+    - [X] Infinite World
+    - [X] dirty chunks
+- [X] Sky Box
+    - [X] Inverted Cube
+    - [X] Render around camera
+    - [X] Texture
 - [ ] Frame Buffers
     - [ ] Gen frame Buffers
     - [ ] Frame Buffer Context (bound buffers + textures)

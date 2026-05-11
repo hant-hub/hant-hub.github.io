@@ -16,7 +16,6 @@ function IndextoXYZ(index) {
     Meshes a 32x32x32 chunk
 */
     function MeshChunk(pos_buf, uv_buf, data) {
-
         for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
             const [x, y, z] = IndextoXYZ(idx);
 

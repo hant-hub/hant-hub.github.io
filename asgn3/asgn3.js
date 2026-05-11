@@ -22,6 +22,9 @@ var camera = {
 };
 
 var voxel_data = [];
+var chunks = {};
+
+
 
 var mesh1 = {
     pos: [],
@@ -35,10 +38,21 @@ var mesh2 = {
 
 var buf2 = null;
 
+var vox_prog = null;
+var sky_prog = null;
+var boid_prog = null;
+
+var num_boids = 1;
+var boids = [];
+var boid_pos = null;
+
 async function main() {
-    var prog = await helpers.LoadShaders(ctx, "test.vert", "test.frag");
-    var buffer = helpers.CreateVertBuffer(ctx, prog);
-    buf2 = helpers.CreateMultiVertBuffer(ctx, prog);
+    vox_prog = await helpers.LoadShaders(ctx, "voxel.vert", "voxel.frag");
+    sky_prog = await helpers.LoadShaders(ctx, "skybox.vert", "skybox.frag");
+    boid_prog = await helpers.LoadShaders(ctx, "boid.vert", "boid.frag");
+
+    var buffer = helpers.CreateVertBuffer(ctx, vox_prog);
+    buf2 = helpers.CreateMultiVertBuffer(ctx, vox_prog);
 
     if (window.localStorage.getItem("cam") != null) {
         var cam = JSON.parse(window.localStorage.getItem("cam"));
@@ -57,35 +71,31 @@ async function main() {
     gl.depthRange(0.0, 1.0);
     gl.clearDepth(1.0);
 
+
+    boid_pos = helpers.CreateVertBuffer(ctx, boid_prog);
+    gl.vertexAttribDivisor(0, 1);
+    gl.vertexAttribDivisor(1, 1);
+    gl.vertexAttribDivisor(2, 1);
+    gl.vertexAttribDivisor(3, 1);
+    helpers.ResizeVertBuffer(ctx, boid_pos, 64 * num_boids);
+
+    var id = new Matrix4();
+    helpers.SubVerts(ctx, boid_pos, 0, id.elements);
+
+    //var vox = helpers.Create3DTex(ctx);
+    //helpers.Upload3DData(ctx, vox, voxData, 2, 2, 2); 
+
+    //helpers.ResizeVertBuffer(ctx, buffer, 6);
+    //if (helpers.PushVerts(ctx, buffer, verticies)) {
+    //    console.log("hit");
+    //}
+
     var tex = await helpers.LoadTexture(ctx, "img/dirt.jpg");
-    var verticies = [
-        -0.5, -0.5,  0.0, 0.0,
-         0.5, -0.5,  0.5, 0.0,
-        -0.5,  0.5,  0.25, 1.0,
-
-         0.5,  0.5,  0.0, 0.0,
-        -0.5,  0.5,  0.5, 0.0,
-         0.5, -0.5,  0.25, 1.0,
-    ];
-
-    var voxData = [
-        128, 1,
-        1, 1,
-
-        1, 1,
-        1, 255
-    ];
-
-    var vox = helpers.Create3DTex(ctx);
-    helpers.Upload3DData(ctx, vox, voxData, 2, 2, 2); 
-
-    helpers.ResizeVertBuffer(ctx, buffer, 6);
-    if (helpers.PushVerts(ctx, buffer, verticies)) {
-        console.log("hit");
-    }
-
-    helpers.BindTexture(ctx, prog.uniform_map.utex, prog, 0, true, tex);
+    helpers.BindTexture(ctx, vox_prog.uniform_map.utex, vox_prog, 1, true, tex);
     //helpers.BindTexture(ctx, prog.uniform_map.vox, prog,  1, false, vox);
+
+    var skybox = await helpers.LoadTexture(ctx, "img/sky.png");
+    helpers.BindTexture(ctx, sky_prog.uniform_map.skybox, sky_prog, 2, true, skybox);
 
     //helpers.SetUniform(ctx, prog, prog.uniform_map.x, 1);
     //helpers.SetUniform(ctx, prog, prog.uniform_map.y, 1);
@@ -96,23 +106,13 @@ async function main() {
     console.log(IndextoXYZ(32));
     console.log(IndextoXYZ(32 * 32));
 
+    //genChunk(0, 0, 0);
 
-    for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
-        const [x, y, z] = IndextoXYZ(idx);
-
-        var thresh = 1.0 * (Math.sin(x) + 1.5) * (Math.sin(z) + 1.5);
-        
-        if (y < thresh) {
-            voxel_data.push(1);
-        } else {
-            voxel_data.push(0);
-        }
-    }
-
-    console.log(voxel_data);
-
-    MeshChunk(mesh1.pos, mesh1.uv, voxel_data);
-    helpers.UploadMultiVertBuffer(ctx, buf2, [mesh1.pos, mesh1.uv]);
+    //for (var x = -1; x < 2; x++) {
+    //    for (var z = -1; z < 2; z++) {
+    //        genChunk(x, 0, z);
+    //    }
+    //}
 
     ctx.canvas.onmousemove = function(ev) { return on_move(ev); };
     ctx.canvas.onwheel = function(ev) { on_wheel(ev);  return false;};
@@ -126,26 +126,55 @@ async function main() {
     };
 
 
-    tick(0, prog, buf2);
+    tick(0, vox_prog, buf2);
 }
 
-var pick_mesh = false;
-async function pushVoxelData() {
-    if (pick_mesh) {
-        mesh1.pos = [];
-        mesh1.uv = []
-        MeshChunk(mesh1.pos, mesh1.uv, voxel_data);
-        helpers.UploadMultiVertBuffer(ctx, buf2, [mesh1.pos, mesh1.uv]);
-    } else {
-        mesh2.pos = [];
-        mesh2.uv = []
-        MeshChunk(mesh2.pos, mesh2.uv, voxel_data);
-        helpers.UploadMultiVertBuffer(ctx, buf2, [mesh2.pos, mesh2.uv]);
-    }
-    pick_mesh = !pick_mesh;
+function refreshChunk(chunk) {
+    chunk.mesh.pos = [];
+    chunk.mesh.uv = []
+    MeshChunk(chunk.mesh.pos, chunk.mesh.uv, chunk.data);
+    helpers.UploadMultiVertBuffer(ctx, chunk.buffer, [chunk.mesh.pos, chunk.mesh.uv]);
 }
 
-var flip = false;
+async function genChunk(chunkx, chunky, chunkz) {
+    var new_chunk = {
+        data : [],
+        buffer: helpers.CreateMultiVertBuffer(ctx, vox_prog),
+        mesh : {
+            pos: [],
+            uv: []
+        },
+        dirty: false,
+    };
+
+    new_chunk.data = genVoxelData(chunkx, chunky, chunkz);
+
+    new_chunk.mesh.pos = [];
+    new_chunk.mesh.uv = []
+    MeshChunk(new_chunk.mesh.pos, new_chunk.mesh.uv, new_chunk.data);
+    helpers.UploadMultiVertBuffer(ctx, new_chunk.buffer, [new_chunk.mesh.pos, new_chunk.mesh.uv]);
+
+    var chunkID = {chunkx, chunky, chunkz};
+    chunks[JSON.stringify(chunkID)] = new_chunk;
+}
+
+function DeleteChunk(chunkx, chunky, chunkz) {
+    var chunkID = {
+        chunkx: chunkx,
+        chunky: chunky,
+        chunkz: chunkz
+    };
+    var chunk = chunks[JSON.stringify(chunkID)];
+
+    if (!chunk) return;
+
+    //skip dirty chunks
+    if (chunk.dirty) return;
+
+    helpers.DeleteMultiVertBuffer(ctx, chunk.buffer);
+    delete chunks[JSON.stringify(chunkID)];
+}
+
 async function on_click(ev) {
     on_move(ev);
 
@@ -155,10 +184,67 @@ async function on_click(ev) {
         return;
     }
 
+    var action = document.getElementById("action").value;
 
-    voxel_data[XYZtoIndex(15, 10, 15)] = flip;
-    pushVoxelData();
-    flip = !flip;
+    switch (action) {
+        case "place":
+            {
+                var collision = ChunkRaycast(
+                    camera.pos.elements[0], camera.pos.elements[1], camera.pos.elements[2],
+                    camera.dir.elements[0], camera.dir.elements[1], camera.dir.elements[2],
+                    10, chunks);
+
+                if (ev.buttons == 1) {
+                    //if (!chunk.data[collision[collision.length - 1]]) return;
+                    var index = 0;
+                    while (index < collision.length && !collision[index][1]) index++;
+                    if (index >= collision.length) break;
+                    if (index != 0) index--;
+                    writeVoxel(
+                        collision[index][0][0],
+                        collision[index][0][1],
+                        collision[index][0][2],
+                        1,
+                        chunks);
+                }
+
+                if (ev.buttons == 2) {
+                    //if (!chunk.data[collision[collision.length - 1]]) return;
+                    var index = 0;
+                    while (index < collision.length && !collision[index][1]) index++;
+                    if (index >= collision.length) break;
+                    writeVoxel(
+                        collision[index][0][0],
+                        collision[index][0][1],
+                        collision[index][0][2],
+                        0,
+                        chunks);
+                }
+
+            } break;
+        case "ray":
+            {
+                var collision = ChunkRaycast(
+                    camera.pos.elements[0], camera.pos.elements[1], camera.pos.elements[2],
+                    camera.dir.elements[0], camera.dir.elements[1], camera.dir.elements[2],
+                    100, chunks);
+
+                var content = 1;
+                if (ev.buttons == 2) content = 0;
+
+                for (var i = 3; i < collision.length; i++) {
+                    writeVoxel(
+                        collision[i][0][0],
+                        collision[i][0][1],
+                        collision[i][0][2],
+                        1,
+                        chunks);
+                }
+            } break;
+    }
+
+
+    //console.log("place!", collision);
 }
 
 
@@ -167,7 +253,7 @@ function on_wheel(ev) {
 }
 
 function on_key_up(ev) {
-    switch (ev.key) {
+    switch (ev.key.toLowerCase()) {
         case 'w': {
             input_state.move.w = false;
         } break;
@@ -184,7 +270,7 @@ function on_key_up(ev) {
         case ' ': {
             input_state.move.up = false;
         } break;
-        case 'Shift': {
+        case 'shift': {
             input_state.move.down = false;
         } break;
 
@@ -194,7 +280,7 @@ function on_key_up(ev) {
 }
 
 function on_key_down(ev) {
-    switch (ev.key) {
+    switch (ev.key.toLowerCase()) {
         case 'w': {
             input_state.move.w = true;
         } break;
@@ -208,10 +294,12 @@ function on_key_down(ev) {
             input_state.move.d = true;
         } break;
 
+        case 'c': console.log(Object.keys(chunks)); break;
+
         case ' ': {
             input_state.move.up = true;
         } break;
-        case 'Shift': {
+        case 'shift': {
             input_state.move.down = true;
         } break;
 
@@ -226,8 +314,8 @@ async function on_move(ev) {
     }
 
 
-    const dx = ev.movementX; // x coordinate of a mouse pointer
-    const dy = ev.movementY; // y coordinate of a mouse pointer
+    var dx = ev.movementX; // x coordinate of a mouse pointer
+    var dy = ev.movementY; // y coordinate of a mouse pointer
 
     var up = new Vector3([0, 1, 0]);
     var perp = Vector3.cross(camera.dir, up);
@@ -235,6 +323,17 @@ async function on_move(ev) {
 
     var rot = new Matrix4();
     rot.rotate(-dx, 0, 1, 0);
+
+    if (
+        camera.dir.elements[0] < 0.1 &&
+        camera.dir.elements[0] > -0.1 &&
+        camera.dir.elements[2] < 0.1 &&
+        camera.dir.elements[2] > -0.1
+    ) {
+        if (camera.dir.elements[1] < 0 && dy > 0) dy = 0;
+        if (camera.dir.elements[1] > 0 && dy < 0) dy = 0;
+    }
+
     rot.rotate(-dy, perp.elements[0], perp.elements[1], perp.elements[2]);
 
     if (input_state.focused) {
@@ -246,6 +345,8 @@ async function on_move(ev) {
 var time = 0;
 var counter = 0;
 var avg_dt = 0;
+
+var render_dist = 2;
 function tick(curr_time, prog, buf) {
     dt = curr_time - time;
     if (dt > 2000) dt = 2000;
@@ -270,26 +371,6 @@ function tick(curr_time, prog, buf) {
             down: false,
         };
     }
-
-    counter++; 
-    if (counter % 1 == 0) {
-        for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
-            const [x, y, z] = IndextoXYZ(idx);
-            var thresh = 1.0 * (Math.sin(0.5 * x + time/1000) + 1.5) * (Math.sin(0.5 * z + time/1000) + 1.5);
-
-            if (y > 8) { 
-                continue;
-            }
-
-            if (y < thresh) {
-                voxel_data[idx] = 1;
-            } else {
-                voxel_data[idx] = 0;
-            }
-        }
-        pushVoxelData();
-    }
-
     
     if (input_state.focused) {
         var forward = new Vector3();
@@ -311,12 +392,35 @@ function tick(curr_time, prog, buf) {
         perp.add(up);
 
         if (perp.magnitude()) perp.normalize();
-        perp.mul(dt * 10.0);
+        var speed = document.getElementById("speed").value;
+        perp.mul(dt * 10.0 * speed);
 
+        var test = new Vector3();
+        var test_perp = new Vector3();
+        test_perp.set(perp);
+        test_perp.normalize();
+        test_perp.mul(1.5);
 
-        camera.pos.add(perp);
+        test.set(camera.pos);
+        test.add(perp);
+        test.add(test_perp);
+        
+        const camera_chunk = {
+            chunkx : Math.floor(test.elements[0]/32),
+            chunky : Math.floor(test.elements[1]/32),
+            chunkz : Math.floor(test.elements[2]/32),
+        };
+
+        var x = Math.floor(test.elements[0] - camera_chunk.chunkx * 32);
+        var y = Math.floor(test.elements[1] - camera_chunk.chunky * 32);
+        var z = Math.floor(test.elements[2] - camera_chunk.chunkz * 32);
+
+        var chunk = chunks[JSON.stringify(camera_chunk)];
+
+        if (!chunk || !chunk.data[XYZtoIndex(x, y, z)]) camera.pos.add(perp);
     }
 
+    //set voxel camera
     var pv = new Matrix4();
     pv.setIdentity();
     pv.perspective(90, ctx.canvas.width/ctx.canvas.height, 0.5, 1000.0);
@@ -328,14 +432,90 @@ function tick(curr_time, prog, buf) {
               target.elements[0], target.elements[1], target.elements[2],
               0, 1, 0);
 
-     
-
     helpers.SetUniform(ctx, prog, prog.uniform_map.pv, pv.elements);
+    helpers.SetUniform(ctx, boid_prog, boid_prog.uniform_map.pv, pv.elements);
+
+    var pv = new Matrix4();
+    pv.setIdentity();
+    pv.perspective(90, ctx.canvas.width/ctx.canvas.height, 0.01, 2.0);
+    var target = new Vector3();
+    target.set(camera.dir);
+    target.add(camera.pos);
+
+    pv.lookAt(camera.pos.elements[0], camera.pos.elements[1], camera.pos.elements[2],
+              target.elements[0], target.elements[1], target.elements[2],
+              0, 1, 0);
+
+
+    helpers.SetUniform(ctx, sky_prog, sky_prog.uniform_map.pv, pv.elements);
+    helpers.SetUniform(ctx, sky_prog, sky_prog.uniform_map.pos, camera.pos.elements);
 
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    //helpers.DrawBuffer(ctx, prog, buffer);
-    helpers.DrawMultiVert(ctx, prog, buf, false);
+
+    const camera_chunk = {
+        chunkx : Math.floor(camera.pos.elements[0]/32),
+        chunky : Math.floor(camera.pos.elements[1]/32),
+        chunkz : Math.floor(camera.pos.elements[2]/32),
+    };
+
+    gl.disable(gl.DEPTH_TEST);
+
+    //helpers.Draw(ctx, sky_prog, 6 * 6);
+
+    gl.enable(gl.DEPTH_TEST);
+
+    for (var x = -render_dist; x <= render_dist; x++) {
+        for (var y = -render_dist; y <= render_dist; y++) {
+            for (var z = -render_dist; z <= render_dist; z++) {
+                var chunkID = {
+                    chunkx: x + camera_chunk.chunkx,
+                    chunky: y + camera_chunk.chunky,
+                    chunkz: z + camera_chunk.chunkz
+                };
+                var value = chunks[JSON.stringify(chunkID)];
+
+                if (!value) { 
+                    genChunk(chunkID.chunkx, chunkID.chunky, chunkID.chunkz);
+                }
+                value = chunks[JSON.stringify(chunkID)];
+
+                helpers.SetUniform(ctx, prog, prog.uniform_map.chunk_pos, [chunkID.chunkx * 32, chunkID.chunky * 32, chunkID.chunkz * 32]);
+                //helpers.DrawMultiVert(ctx, prog, value.buffer, false);
+            }
+        }
+    }
+
+    if (ctx.state.prog !== boid_prog) {
+        gl.useProgram(boid_prog.p);
+        ctx.state.prog = boid_prog;
+    }
+
+    if (ctx.state.vertexbuffer !== boid_pos) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, boid_pos.buffer);
+        gl.bindVertexArray(boid_pos.vao);
+        ctx.state.vertexbuffer = boid_pos;
+    }
+
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 36, num_boids);
+
+    var range = render_dist + 2;
+    for (var x = -range; x <= range; x++) {
+        for (var y = -range; y <= range; y++) {
+            for (var z = -range; z <= range; z++) {
+                if (Math.abs(x) < range &&
+                    Math.abs(y) < range &&
+                    Math.abs(z) < range) continue;
+
+                DeleteChunk(
+                    x + camera_chunk.chunkx,
+                    y + camera_chunk.chunky,
+                    z + camera_chunk.chunkz
+                );
+
+            }
+        }
+    }
 
     const endTime = performance.now();
     if ((time * 100) % 1 == 0) {

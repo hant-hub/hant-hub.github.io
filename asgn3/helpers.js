@@ -284,6 +284,15 @@ var helpers = function() {
         return vert;
     }
 
+    function DeleteMultiVertBuffer(ctx, buffer) {
+        var gl = ctx.gl;
+
+        gl.deleteVertexArray(buffer.vao);
+        for (var i = 0; i < buffer.buffers.length; i++) {
+            gl.deleteBuffer(buffer.buffers[i]);
+        }
+    }
+
     function CreateMultiVertBuffer(ctx, prog) {
         var gl = ctx.gl;
         var vao = gl.createVertexArray();
@@ -303,9 +312,6 @@ var helpers = function() {
             sizes.push(attr.size);
             buffers.push(buffer);
         }
-
-        console.log("vertsize");
-        console.log(sizes);
 
         var vert = {
             vao: vao,
@@ -360,6 +366,8 @@ var helpers = function() {
         } else {
             gl.bindTexture(gl.TEXTURE_3D, texture);
         }
+        gl.activeTexture(gl.TEXTURE0);
+
 
         SetUniform(ctx, prog, uniform, loc);
 
@@ -430,6 +438,9 @@ var helpers = function() {
             } break;
             case gl.FLOAT_VEC2: {
                 gl.uniform2f(info.location, value[0], value[1]);
+            } break;
+            case gl.FLOAT_VEC3: {
+                gl.uniform3f(info.location, value[0], value[1], value[2]);
             } break;
             case gl.FLOAT_MAT4: {
                 gl.uniformMatrix4fv(info.location, false, value);
@@ -594,6 +605,9 @@ var helpers = function() {
         const srcFormat = gl.RGBA;
         const srcType = gl.UNSIGNED_BYTE;
         const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
+
+        var old = gl.getParameter(gl.ACTIVE_TEXTURE);
+        gl.activeTexture(gl.TEXTURE0);
         gl.texImage2D(
             gl.TEXTURE_2D,
             level,
@@ -605,10 +619,14 @@ var helpers = function() {
             srcType,
             pixel,
         );
+        gl.activeTexture(old);
+
 
         var img = new Image();
-        img.src = file;
         img.onload = () => {
+            var old = gl.getParameter(gl.ACTIVE_TEXTURE);
+            gl.activeTexture(gl.TEXTURE0);
+
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
             gl.texImage2D(
@@ -630,9 +648,13 @@ var helpers = function() {
             }
 
             gl.generateMipmap(gl.TEXTURE_2D);
+
+            gl.activeTexture(old);
         }
+        img.src = file;
 
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
         return texture;
     }
 
@@ -724,6 +746,7 @@ var helpers = function() {
         BindTexture: BindTexture,
         CreateVertBuffer: CreateVertBuffer,
         CreateMultiVertBuffer: CreateMultiVertBuffer,
+        DeleteMultiVertBuffer: DeleteMultiVertBuffer,
         ResizeVertBuffer: ResizeVertBuffer,
         ResizeMultiVertBuffer: ResizeMultiVertBuffer,
         PushVerts: PushVerts,

@@ -17,7 +17,15 @@ ehantman@ucsc.edu
     <canvas id="webgl" width="1000" height="600">
         Please use the browser supporting "canvas".
     </canvas>
+    <div />
     <button id = "cam" >Reset Camera</button>
+    <div />
+        <select name = "Action" id = "action">
+            <option value = "place">Place Block</option>
+            <option value = "ray">Cast Ray</option>
+        </select>
+        Speed: <input type = "range" min = "0" max = "10" step=".1" id = "speed"></input>
+
     <div />
         <script src="lib/webgl-utils.js"></script>
         <script src="lib/webgl-debug.js"></script>
