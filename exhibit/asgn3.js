@@ -221,11 +221,22 @@ async function on_click(ev) {
                     while (index < collision.length && !collision[index][1]) index++;
                     if (index >= collision.length) break;
                     if (index != 0) index--;
+                    
+                    var block_type = document.getElementById("type").value;
+
+                    var value = 0;
+                    switch (block_type) {
+                        case "dirt": value = 1; break;
+                        case "stone": value = 2; break;
+                        case "grass": value = 3; break;
+                        case "ore": value = 4; break;
+                    }
+
                     writeVoxel(
                         collision[index][0][0],
                         collision[index][0][1],
                         collision[index][0][2],
-                        1,
+                        value,
                         chunks);
                 }
 
@@ -461,6 +472,34 @@ function tick(curr_time, prog, buf) {
 
     helpers.SetUniform(ctx, prog, prog.uniform_map.pv, pv.elements);
     helpers.SetUniform(ctx, boid_prog, boid_prog.uniform_map.pv, pv.elements);
+
+    {
+        var collision = ChunkRaycast(
+            camera.pos.elements[0], camera.pos.elements[1], camera.pos.elements[2],
+            camera.dir.elements[0], camera.dir.elements[1], camera.dir.elements[2],
+            10, chunks);
+
+        if (collision && collision.length != 0) {
+            var index = 0;
+            while (index < collision.length && !collision[index][1]) index++;
+            //if (index != 0) index--;
+
+            if (index < collision.length) {
+                var x = collision[index][0][0];
+                var y = collision[index][0][1];
+                var z = collision[index][0][2];
+
+                helpers.SetUniform(ctx, prog, prog.uniform_map.cursor, [x, y, z]);
+            } else {
+                var x = collision[collision.length - 1][0][0];
+                var y = collision[collision.length - 1][0][1];
+                var z = collision[collision.length - 1][0][2];
+
+                helpers.SetUniform(ctx, prog, prog.uniform_map.cursor, [x, y, z]);
+            }
+        }
+    }
+
 
     var pv = new Matrix4();
     pv.setIdentity();

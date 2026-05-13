@@ -138,6 +138,11 @@ function ChunkRaycast(x, y, z, dx, dy, dz, max, chunks) {
 
     while (samples.length < max) {
 
+        if (!chunk || !chunk.ready) {
+            console.log("out of bounds");
+            break;
+        }
+
         samples.push([[x + chunkID.chunkx * 32, y + chunkID.chunky * 32, z + chunkID.chunkz * 32], chunk.data[XYZtoIndex(x, y, z)]]);
 
         if (tMaxX < tMaxY) {
@@ -231,10 +236,6 @@ function ChunkRaycast(x, y, z, dx, dy, dz, max, chunks) {
             chunk = chunks[JSON.stringify(chunkID)];
         }
 
-        if (!chunk) {
-            console.log("out of bounds");
-            break;
-        }
     }
 
     return samples;

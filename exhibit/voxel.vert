@@ -8,6 +8,7 @@ in vec3 a_norm;
 out vec2 uv;
 out vec3 norm;
 out vec3 pos;
+out vec3 cpos;
 out float ao;
 
 uniform mat4 pv;
@@ -21,6 +22,7 @@ void main() {
     gl_Position = pv * vec4(chunk_pos + a_Position, 1.0);
     pos = a_Position;
     norm = a_norm;
+    cpos = chunk_pos;
 
 
     uv = a_uv;
