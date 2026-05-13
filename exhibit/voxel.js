@@ -69,14 +69,26 @@ function genVoxelData(chunkx, chunky, chunkz) {
 
         //value noise
         var v = valueNoise(x, y, z); 
+        var up = valueNoise(x, y + 1, z);
+
         var r = valueNoise(x + 10, y + 10, z * 2);
+        var w = valueNoise(x * 50 + 10, y * 2 - 100, z + 10);
 
         if (v > 0.6) {
-            if (v < 0.603) data[idx] = 3;
-            else if (v < 0.62) data[idx] = 1;
-            else data[idx] = 2;
+            if (v < 0.65) {
+                if (w < 0.2 || up > 0.6) {
+                    if (w > 0.3) data[idx] = 1;
+                    else data[idx] = 2;
+                } else {
+                    data[idx] = 3;
+                }
+            }
+            else {
+                if (v > 0.7 && r > 0.5) {
+                    data[idx] = 4;
+                } else data[idx] = 2;
+            }
 
-            if (r > 0.98) data[idx] = 4;
 
         } else {
             data[idx] = 0;

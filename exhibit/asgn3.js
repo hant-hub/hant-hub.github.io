@@ -40,7 +40,7 @@ var vox_prog = null;
 var sky_prog = null;
 var boid_prog = null;
 
-var num_boids = 500;
+var num_boids = 200;
 var boids = [];
 var boid_pos = null;
 
@@ -123,7 +123,6 @@ async function main() {
         camera.pos = new Vector3([0, 0, 0]);
     };
 
-
     tick(0, vox_prog, buf2);
 }
 
@@ -143,28 +142,23 @@ async function genChunk(chunkx, chunky, chunkz) {
         return;
     }
 
-    var new_chunk = {
-        data : [],
-        buffer: helpers.CreateMultiVertBuffer(ctx, vox_prog),
-        mesh : {
-            pos: [],
-            uv: []
-        },
-        tex : helpers.Create3DTex(ctx),
-        dirty: false,
-        finished : false,
-    };
-    var chunkID = {chunkx, chunky, chunkz};
-    chunks[JSON.stringify(chunkID)] = new_chunk;
     chunk_gen.postMessage([chunkx, chunky, chunkz]);
+    chunks[JSON.stringify(chunkID)] = {ready: false};
 
 }
 
 chunk_gen.onmessage = (e) => {
     var [key, mesh, data] = e.data; 
 
-    chunks[key].data = new Uint8Array(data); 
-    chunks[key].mesh = mesh;
+    var new_chunk = {
+        data : new Uint8Array(data),
+        buffer: helpers.CreateMultiVertBuffer(ctx, vox_prog),
+        mesh : mesh,
+        tex : helpers.Create3DTex(ctx),
+        dirty: false,
+        ready: true,
+    };
+    chunks[key] = new_chunk;
 
     helpers.Upload3DData(ctx, chunks[key].tex, chunks[key].data, 32, 32, 32);
     helpers.UploadMultiVertBuffer(ctx, chunks[key].buffer, [chunks[key].mesh.pos, chunks[key].mesh.uv]);
@@ -178,14 +172,17 @@ function DeleteChunk(chunkx, chunky, chunkz) {
         chunkz: chunkz
     };
     var chunk = chunks[JSON.stringify(chunkID)];
-
-    if (!chunk) return;
+    if (!chunk || !chunk.ready) return;
 
     //skip dirty chunks
     if (chunk.dirty) return;
 
     helpers.DeleteMultiVertBuffer(ctx, chunk.buffer);
     gl.deleteTexture(chunk.tex);
+    delete chunk.data;
+    delete chunk.mesh.pos;
+    delete chunk.mesh.uv;
+    delete chunk.mesh;
 
     delete chunks[JSON.stringify(chunkID)];
 }
@@ -367,7 +364,7 @@ var time = 0;
 var counter = 0;
 var avg_dt = 0;
 
-var render_dist = 5;
+var render_dist = 4;
 function tick(curr_time, prog, buf) {
     dt = curr_time - time;
     if (dt > 2000) dt = 2000;
@@ -438,7 +435,7 @@ function tick(curr_time, prog, buf) {
 
         var chunk = chunks[JSON.stringify(camera_chunk)];
 
-        if (!chunk || !chunk.data[XYZtoIndex(x, y, z)]) camera.pos.add(perp);
+        if (!chunk || !chunk.ready || !chunk.data[XYZtoIndex(x, y, z)]) camera.pos.add(perp);
     }
 
     //set voxel camera
@@ -499,7 +496,13 @@ function tick(curr_time, prog, buf) {
 
                 if (!value) { 
                     genChunk(chunkID.chunkx, chunkID.chunky, chunkID.chunkz);
+                    continue;
                 }
+                
+                if (!value.ready) {
+                    continue;
+                }
+
                 value = chunks[JSON.stringify(chunkID)];
 
                 helpers.SetUniform(ctx, prog, prog.uniform_map.chunk_pos, [chunkID.chunkx * 32, chunkID.chunky * 32, chunkID.chunkz * 32]);
