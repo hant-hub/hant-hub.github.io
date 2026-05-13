@@ -91,7 +91,7 @@ async function main() {
     //    console.log("hit");
     //}
 
-    var tex = await helpers.LoadTexture(ctx, "img/voxel.png");
+    var tex = await helpers.LoadTexture(ctx, "img/voxel.jpg");
     helpers.BindTexture(ctx, vox_prog.uniform_map.utex, vox_prog, 1, true, tex);
     //helpers.BindTexture(ctx, prog.uniform_map.vox, prog,  1, false, vox);
 
@@ -396,6 +396,8 @@ function tick(curr_time, prog, buf) {
 
     const startTime = performance.now();
 
+    render_dist = document.getElementById("render").value;
+
     window.localStorage.setItem("cam", JSON.stringify(camera));
 
     if (input_state.focused && document.pointerLockElement != ctx.canvas) {
@@ -463,7 +465,7 @@ function tick(curr_time, prog, buf) {
     //set voxel camera
     var pv = new Matrix4();
     pv.setIdentity();
-    pv.perspective(90, ctx.canvas.width/ctx.canvas.height, 0.5, 1000.0);
+    pv.perspective(90, ctx.canvas.width/ctx.canvas.height, 0.5, (render_dist + 1) * 32);
     var target = new Vector3();
     target.set(camera.dir);
     target.add(camera.pos);
