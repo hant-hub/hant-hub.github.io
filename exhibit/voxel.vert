@@ -3,7 +3,10 @@ precision mediump sampler3D;
 
 in vec3 a_Position;
 in vec2 a_uv;
+in vec3 a_norm;
+
 out vec2 uv;
+out vec3 norm;
 out vec3 pos;
 out float ao;
 
@@ -17,6 +20,7 @@ float uv_scale = 4.0;
 void main() {
     gl_Position = pv * vec4(chunk_pos + a_Position, 1.0);
     pos = a_Position;
+    norm = a_norm;
 
 
     uv = a_uv;
@@ -35,7 +39,8 @@ void main() {
 
     float fill = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7;
     fill /= 8.0;
+    fill *= 1.2;
     fill = 1.0 - fill;
 
-    ao = (0.8 * fill) + 0.2;
+    ao = fill + 0.5;
 }

@@ -84,7 +84,7 @@ function genVoxelData(chunkx, chunky, chunkz) {
                 }
             }
             else {
-                if (v > 0.7 && r > 0.5) {
+                if (v > 0.9 && r > 0.5) {
                     data[idx] = 4;
                 } else data[idx] = 2;
             }

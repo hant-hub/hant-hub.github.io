@@ -15,7 +15,7 @@ function IndextoXYZ(index) {
 /*
     Meshes a 32x32x32 chunk
 */
-    function MeshChunk(pos_buf, uv_buf, data) {
+    function MeshChunk(pos_buf, uv_buf, norm_buf, data) {
         for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
             const [x, y, z] = IndextoXYZ(idx);
 
@@ -48,6 +48,15 @@ function IndextoXYZ(index) {
                     0, 1,
                     1, 1,
                 );
+
+                norm_buf.push(
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                );
             }
 
 
@@ -71,6 +80,15 @@ function IndextoXYZ(index) {
                     0, 1,
                     0, 0,
                 );
+
+                norm_buf.push(
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0,
+                );
             }
 
             //+y
@@ -93,6 +111,15 @@ function IndextoXYZ(index) {
                     0, 1,
                     0, 0,
                 );
+
+                norm_buf.push(
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                );
             } 
 
             //-y
@@ -114,6 +141,15 @@ function IndextoXYZ(index) {
                     1, 1,
                     0, 0,
                     0, 1,
+                );
+
+                norm_buf.push(
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
                 );
             }
 
@@ -138,6 +174,15 @@ function IndextoXYZ(index) {
                     0, 0,
                     0, 1,
                 );
+
+                norm_buf.push(
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+                );
             }
 
             //-z
@@ -159,6 +204,15 @@ function IndextoXYZ(index) {
                     1, 1,
                     0, 1,
                     0, 0,
+                );
+
+                norm_buf.push(
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
                 );
             }
         }

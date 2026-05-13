@@ -44,7 +44,10 @@ var num_boids = 200;
 var boids = [];
 var boid_pos = null;
 
-var chunk_gen = new Worker("make_chunk.js");
+var chunk_gen = [
+    new Worker("make_chunk.js"),
+    new Worker("make_chunk.js"),
+];
 
 async function main() {
     vox_prog = await helpers.LoadShaders(ctx, "voxel.vert", "voxel.frag");
@@ -129,12 +132,14 @@ async function main() {
 function refreshChunk(chunk) {
     chunk.mesh.pos = [];
     chunk.mesh.uv = [];
+    chunk.mesh.norm = [];
 
     helpers.Upload3DData(ctx, chunk.tex, chunk.data, 32, 32, 32);
-    MeshChunk(chunk.mesh.pos, chunk.mesh.uv, chunk.data);
-    helpers.UploadMultiVertBuffer(ctx, chunk.buffer, [chunk.mesh.pos, chunk.mesh.uv]);
+    MeshChunk(chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm, chunk.data);
+    helpers.UploadMultiVertBuffer(ctx, chunk.buffer, [chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm]);
 }
 
+var selected_gen = 0;
 async function genChunk(chunkx, chunky, chunkz) {
 
     var chunkID = {chunkx, chunky, chunkz};
@@ -142,28 +147,32 @@ async function genChunk(chunkx, chunky, chunkz) {
         return;
     }
 
-    chunk_gen.postMessage([chunkx, chunky, chunkz]);
+    chunk_gen[selected_gen].postMessage([chunkx, chunky, chunkz]);
+    selected_gen = (selected_gen + 1) % chunk_gen.length;
+
     chunks[JSON.stringify(chunkID)] = {ready: false};
 
 }
 
-chunk_gen.onmessage = (e) => {
-    var [key, mesh, data] = e.data; 
+for (var i = 0; i < chunk_gen.length; i++) {
+    chunk_gen[i].onmessage = (e) => {
+        var [key, mesh, data] = e.data; 
 
-    var new_chunk = {
-        data : new Uint8Array(data),
-        buffer: helpers.CreateMultiVertBuffer(ctx, vox_prog),
-        mesh : mesh,
-        tex : helpers.Create3DTex(ctx),
-        dirty: false,
-        ready: true,
+        var new_chunk = {
+            data : new Uint8Array(data),
+            buffer: helpers.CreateMultiVertBuffer(ctx, vox_prog),
+            mesh : mesh,
+            tex : helpers.Create3DTex(ctx),
+            dirty: false,
+            ready: true,
+        };
+        chunks[key] = new_chunk;
+
+        helpers.Upload3DData(ctx, chunks[key].tex, chunks[key].data, 32, 32, 32);
+        helpers.UploadMultiVertBuffer(ctx, chunks[key].buffer, [chunks[key].mesh.pos, chunks[key].mesh.uv, chunks[key].mesh.norm]);
+
     };
-    chunks[key] = new_chunk;
-
-    helpers.Upload3DData(ctx, chunks[key].tex, chunks[key].data, 32, 32, 32);
-    helpers.UploadMultiVertBuffer(ctx, chunks[key].buffer, [chunks[key].mesh.pos, chunks[key].mesh.uv]);
-
-};
+}
 
 function DeleteChunk(chunkx, chunky, chunkz) {
     var chunkID = {
@@ -364,7 +373,7 @@ var time = 0;
 var counter = 0;
 var avg_dt = 0;
 
-var render_dist = 4;
+var render_dist = 3;
 function tick(curr_time, prog, buf) {
     dt = curr_time - time;
     if (dt > 2000) dt = 2000;
