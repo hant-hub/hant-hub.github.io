@@ -652,7 +652,7 @@ var helpers = function() {
         }
         img.src = file;
 
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
         return texture;
     }
