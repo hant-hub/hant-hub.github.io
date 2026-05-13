@@ -9,11 +9,12 @@ onmessage = (e) => {
             pos: [],
             uv: [],
             norm: [],
+            vox: [],
         }
     };
 
     var data = genVoxelData(chunkx, chunky, chunkz);
-    MeshChunk(new_chunk.mesh.pos, new_chunk.mesh.uv, new_chunk.mesh.norm, data);
+    MeshChunk(new_chunk.mesh.pos, new_chunk.mesh.uv, new_chunk.mesh.norm, new_chunk.mesh.vox, data);
 
     var chunkID = {chunkx, chunky, chunkz};
     postMessage([JSON.stringify(chunkID), new_chunk.mesh, data.buffer], [data.buffer]);

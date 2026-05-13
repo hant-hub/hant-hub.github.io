@@ -15,7 +15,7 @@ function IndextoXYZ(index) {
 /*
     Meshes a 32x32x32 chunk
 */
-    function MeshChunk(pos_buf, uv_buf, norm_buf, data) {
+    function MeshChunk(pos_buf, uv_buf, norm_buf, vox_buf, data) {
         for (var idx = 0; idx < XYZtoIndex(31, 31, 31); idx++) {
             const [x, y, z] = IndextoXYZ(idx);
 
@@ -57,6 +57,15 @@ function IndextoXYZ(index) {
                     1, 0, 0,
                     1, 0, 0,
                 );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                );
             }
 
 
@@ -89,6 +98,15 @@ function IndextoXYZ(index) {
                     -1, 0, 0,
                     -1, 0, 0,
                 );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                );
             }
 
             //+y
@@ -120,6 +138,15 @@ function IndextoXYZ(index) {
                     0, 1, 0,
                     0, 1, 0,
                 );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                );
             } 
 
             //-y
@@ -150,6 +177,15 @@ function IndextoXYZ(index) {
                     0, -1, 0,
                     0, -1, 0,
                     0, -1, 0,
+                );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
                 );
             }
 
@@ -183,6 +219,15 @@ function IndextoXYZ(index) {
                     0, 0, 1,
                     0, 0, 1,
                 );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                );
             }
 
             //-z
@@ -213,6 +258,15 @@ function IndextoXYZ(index) {
                     0, 0, -1,
                     0, 0, -1,
                     0, 0, -1,
+                );
+
+                vox_buf.push(
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
+                    x, y, z,
                 );
             }
         }

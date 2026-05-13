@@ -4,12 +4,14 @@ precision mediump sampler3D;
 in vec3 a_Position;
 in vec2 a_uv;
 in vec3 a_norm;
+in vec3 a_vox;
 
 out vec2 uv;
 out vec3 norm;
 out vec3 pos;
 out vec3 cpos;
 out float ao;
+out vec3 s_vox;
 
 uniform mat4 pv;
 uniform vec3 chunk_pos;
@@ -23,6 +25,7 @@ void main() {
     pos = a_Position;
     norm = a_norm;
     cpos = chunk_pos;
+    s_vox = a_vox;
 
 
     uv = a_uv;

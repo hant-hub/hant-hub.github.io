@@ -133,10 +133,11 @@ function refreshChunk(chunk) {
     chunk.mesh.pos = [];
     chunk.mesh.uv = [];
     chunk.mesh.norm = [];
+    chunk.mesh.vox = [];
 
     helpers.Upload3DData(ctx, chunk.tex, chunk.data, 32, 32, 32);
-    MeshChunk(chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm, chunk.data);
-    helpers.UploadMultiVertBuffer(ctx, chunk.buffer, [chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm]);
+    MeshChunk(chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm, chunk.mesh.vox, chunk.data);
+    helpers.UploadMultiVertBuffer(ctx, chunk.buffer, [chunk.mesh.pos, chunk.mesh.uv, chunk.mesh.norm, chunk.mesh.vox]);
 }
 
 var selected_gen = 0;
@@ -169,7 +170,8 @@ for (var i = 0; i < chunk_gen.length; i++) {
         chunks[key] = new_chunk;
 
         helpers.Upload3DData(ctx, chunks[key].tex, chunks[key].data, 32, 32, 32);
-        helpers.UploadMultiVertBuffer(ctx, chunks[key].buffer, [chunks[key].mesh.pos, chunks[key].mesh.uv, chunks[key].mesh.norm]);
+        helpers.UploadMultiVertBuffer(ctx, chunks[key].buffer, 
+            [chunks[key].mesh.pos, chunks[key].mesh.uv, chunks[key].mesh.norm, chunks[key].mesh.vox]);
 
     };
 }
