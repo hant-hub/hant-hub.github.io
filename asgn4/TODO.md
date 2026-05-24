@@ -1,0 +1,37 @@
+
+## TODO List:
+- [X] Update CompileShaders
+    - [X] Get Uniform Blocks
+    - [X] Get Uniform Block members
+- [X] Uniform Buffers
+    - [X] Alloc Uniform Buffer (maybe shared?)
+    - [X] Bind Uniform Buffer to Block
+- [X] GLSL Files
+- [ ] Voxel Meshing
+    - [X] no culling
+    - [X] naive
+    - [ ] greedy?
+- [ ] 3D textures
+    - [X] creation
+    - [X] upload
+    - [ ] binding
+- [ ] Textures
+    - [X] Create Texture
+    - [X] Upload Image Data
+    - [ ] Bind Textures
+- [X] Voxel helpers
+    - [X] Ray casting
+    - [X] block placing
+    - [X] block deletion
+- [X] World Gen
+    - [X] Correct noise
+    - [X] Chunk Grid
+    - [X] Infinite World
+    - [X] dirty chunks
+- [X] Sky Box
+    - [X] Inverted Cube
+    - [X] Render around camera
+    - [X] Texture
+- [ ] Frame Buffers
+    - [ ] Gen frame Buffers
+    - [ ] Frame Buffer Context (bound buffers + textures)

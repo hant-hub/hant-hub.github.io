@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Dirt</title>
+</head>
+
+Elijah Hantman
+<div />
+ehantman@ucsc.edu 
+<div />
+
+<body onload="main()">
+    <p id = "frame" > </p>
+    <p id = "fps" > </p>
+
+    <canvas id="webgl" width="1000" height="600">
+        Please use the browser supporting "canvas".
+    </canvas>
+    <div />
+    <button id = "cam" >Reset Camera</button>
+    <div />
+        <select name = "Action" id = "action">
+            <option value = "place">Place Block</option>
+            <option value = "ray">Cast Ray</option>
+            <option value = "lazer">Shoot Lazer</option>
+        </select>
+        <select name = "Block Type" id = "type">
+            <option value = "dirt">Dirt</option>
+            <option value = "stone">Stone</option>
+            <option value = "grass">Grass</option>
+            <option value = "ore">Ore?</option>
+        </select>
+        Speed: <input type = "range" min = "0" max = "10" value="1" step=".1" id = "speed"></input>
+        Render Distance: <input type = "range" min = "1" max = "5" value="1" step="1" id = "render"></input>
+        Show Normals: <input id = "debug-normal" type = "checkbox" />
+        Enable Teapot: <input id = "enable-tea" type = "checkbox" />
+        Enable Light: <input id = "enable-light" type = "checkbox" />
+        Enable FlashLight: <input id = "enable-flash" type = "checkbox" />
+        Enable FlashLight Update: <input id = "enable-flash-update" type = "checkbox" />
+        <div />
+        Point Light XPos: <input type = "range" min = "-180" max = "180" id = "px"></input>
+        <div />
+        Point Light YPos: <input type = "range" min = "-180" max = "180" id = "py"></input>
+        <div />
+        Point Light ZPos: <input type = "range" min = "-180" max = "180" id = "pz"></input>
+        <div />
+        Move Light: <input id = "move-light" type = "checkbox" />
+
+    <div />
+        <script src="lib/webgl-utils.js"></script>
+        <script src="lib/webgl-debug.js"></script>
+        <script src="lib/cuon-utils.js"></script>
+        <script src="lib/cuon-matrix-cse160.js"></script>
+        <script src="helpers.js"></script>
+        <script src="mesher.js"></script>
+        <script src="obj.js"></script>
+        <script src="boid.js"></script>
+        <script src="voxel.js"></script>
+        <script src="asgn4.js"></script>
+
+    <h1>Grader Info</h1>
+    <p>
+    The sphere is the only thing with light toggle. The voxels have lambertian lighting with
+    a small ambient light.
+    </p>
+    <p>
+    The lights default to being inside of the sphere and teapot, to fix this just move them
+    out with the sliders. You can also just check the move light button to have the light orbit around
+    about 10 units away.
+    </p>
+    <p>
+    The flashlight is the spotlight implementation. Press both enable flashlight and enable flashlight update.
+    This will place the spotlight at the camera position pointing in the look direction. To stop moving the spotlight
+    uncheck the flashlight update and the spotlight will stay in the last place you were.
+    </p>
+    <p>
+    The teapot replaces the sphere. I felt that it made more sense since it is kind of just a test.
+    I didn't update all the shaders with the full blinn-phong lighting because I thought it would both look
+    kind of bad. So while the normal visualization works, with the voxels the point lights and spot light don't.
+    </p>
+    <p>
+    The lighting is integrated with the voxels a little. The voxels have a directional lambertian light. I skipped
+    the specular because I feel the voxels look better matte, it gives it a plastic almost lego look.
+    </p>
+
+</body>
+</html>
