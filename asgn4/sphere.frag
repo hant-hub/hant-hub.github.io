@@ -13,6 +13,9 @@ uniform int flash_enable;
 
 uniform vec3 point_light;
 
+uniform vec3 obj_color;
+uniform vec3 light_color;
+
 uniform vec3 camera;
 uniform vec3 flash;
 uniform vec3 flash_dir;
@@ -20,7 +23,7 @@ uniform vec3 flash_dir;
 
 void main() {
 
-    fragColor = vec4(1.0);
+    fragColor = vec4(light_color, 1.0);
 
     if (debug_normal > 0) {
         fragColor = vec4(0.5 * (norm + vec3(1.0)), 1.0);
@@ -57,8 +60,9 @@ void main() {
         }
     }
 
-    if (light < 0.3) light = 0.3;
     fragColor *= light;
+    fragColor *= vec4(obj_color, 1.0);
+    fragColor += vec4(0.3 * obj_color, 1.0);
 
 
     fragColor.w = 1.0;

@@ -587,6 +587,19 @@ function tick(curr_time, prog, buf) {
 
     helpers.SetUniform(ctx, circ_prog, circ_prog.uniform_map.point_light, point_pos);
 
+    var obj_color = [
+        document.getElementById("or").value,
+        document.getElementById("og").value,
+        document.getElementById("ob").value
+    ];
+
+    var light_color = [
+        document.getElementById("lr").value,
+        document.getElementById("lg").value,
+        document.getElementById("lb").value
+    ];
+
+
     {
         var collision = ChunkRaycast(
             camera.pos.elements[0], camera.pos.elements[1], camera.pos.elements[2],
@@ -686,12 +699,16 @@ function tick(curr_time, prog, buf) {
 
         var m = new Matrix4();
         helpers.SetUniform(ctx, circ_prog, circ_prog.uniform_map.m, m.elements);
+        helpers.SetUniform(ctx, circ_prog, circ_prog.uniform_map.obj_color, obj_color);
+        helpers.SetUniform(ctx, circ_prog, circ_prog.uniform_map.light_color, light_color);
 
         if (enable_tea) {
             helpers.DrawMultiVert(ctx, circ_prog, teapot_buf, false);
         } else {
             helpers.DrawMultiVert(ctx, circ_prog, circ_buf, false);
         }
+
+        helpers.SetUniform(ctx, circ_prog, circ_prog.uniform_map.obj_color, [1.0, 1.0, 1.0]);
     }
 
     if (enable_light) {
