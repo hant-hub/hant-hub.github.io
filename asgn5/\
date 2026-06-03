@@ -1,0 +1,347 @@
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {MTLLoader} from 'three/addons/loaders/MTLLoader.js';
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 50 );
+
+const renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true;
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+//amient light
+{
+    const skyColor = 0xB1E1FF;  // light blue
+    const groundColor = 0xB97A20;  // brownish orange
+    const intensity = 0.5;
+    const light = new THREE.AmbientLight(skyColor, intensity);
+    scene.add(light);
+}
+
+//sun
+{
+    const color = 0xFFFFFF;
+    const intensity = 20;
+    const light = new THREE.SpotLight(color, intensity);
+    light.position.set(5, 5, 5);
+    light.castShadow = true;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+    scene.add(light);
+}
+
+//secondary light
+{
+    const color = 0xFFFFFF;
+    const intensity = 10;
+    const light = new THREE.SpotLight(color, intensity);
+    light.position.set(-5, -5, -5);
+    light.castShadow = false;
+    scene.add(light);
+}
+
+//load textures
+const loader = new THREE.TextureLoader();
+const materials = [
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+  new THREE.MeshPhongMaterial({map: loadColorTexture('img/container.jpg'), shininess: 20.0}),
+];
+
+function loadColorTexture( path ) {
+  const texture = loader.load( path );
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+//background
+{
+  const loader = new THREE.CubeTextureLoader();
+  const texture = loader.load([
+    'img/right.png',
+    'img/left.png',
+    'img/top.png',
+    'img/bottom.png',
+    'img/front.png',
+    'img/back.png',
+  ]);
+  scene.background = texture;
+}
+
+//load models
+{
+    const objLoader = new OBJLoader();
+    const mtlLoader = new MTLLoader();
+    mtlLoader.load('models/materials.mtl', (mtl) => {
+        mtl.preload();
+        objLoader.setMaterials(mtl);
+        objLoader.load('models/model.obj', (root) => {
+            root.position.x = 2.0;
+            root.rotateZ(-Math.PI/2);
+            scene.add(root);
+        });
+    });
+}
+
+
+
+//create planet
+const cube_geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+const geometry = new THREE.IcosahedronGeometry( 1.0, 32);
+
+//distort surface
+{
+    var noise = new SimplexNoise();
+
+    for (var i = 0; i < geometry.attributes.position.count; i++) {
+        var pos = {
+            x: geometry.attributes.position.getX(i),
+            y: geometry.attributes.position.getY(i),
+            z: geometry.attributes.position.getZ(i),
+        };
+        
+        //var r = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+
+        //var theta = Math.acos(pos.z/r);
+        //var phi = Math.atan(pos.y/pos.x);
+
+        //theta /= 1.0;
+        //phi /= 1.0;
+
+        var n = noise.noise3d(pos.x, pos.y, pos.z);
+        var mul = 1.0;
+        for (var j = 0; j < 5; j++) {
+            mul *= 2.0;
+            n += (1.0/mul) * noise.noise3d(mul * (pos.x + j), mul * (pos.y - j), mul * pos.z);
+        }
+
+        n = (2.0 * n) + 10.0;
+        n /= 10.0;
+
+        pos.x *= n;
+        pos.y *= n; 
+        pos.z *= n;
+
+        geometry.attributes.position.setXYZ(i, pos.x, pos.y, pos.z);
+    }
+    geometry.attributes.position.needsUpdate = true;
+    geometry.computeVertexNormals();
+
+
+}
+
+
+const material = new THREE.MeshPhongMaterial( { color: 0x00ff00, shininess: 200} );
+const planet = new THREE.Mesh( geometry, material );
+planet.castShadow = true;
+planet.receiveShadow = true;
+
+const cube = new THREE.Mesh( cube_geo, materials );
+cube.castShadow = true;
+cube.receiveShadow = true;
+cube.position.y = 1.1;
+
+scene.add( planet );
+scene.add( cube );
+
+camera.position.z = 5;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.update();
+
+const atmosphere = {
+    uniforms: {
+        tDiffuse: { value: null },
+        tDepth:   { value: null },
+        color:    { value: new THREE.Color(0x88CCFF) },
+        center:   { value: new THREE.Vector3(0, 0, 0) },
+        world_mat:  { value: new THREE.Matrix4() },
+        proj_inv:  { value: new THREE.Matrix4() },
+        sun_pos: { value: new THREE.Vector3(5, 5, 5) },
+    },
+    vertexShader: `
+    varying vec2 vUv;
+
+
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1);
+    }
+    `
+    ,
+    fragmentShader: `
+    #include <packing>
+    varying vec2 vUv;
+
+    uniform sampler2D tDiffuse;
+    uniform sampler2D tDepth;
+
+    uniform vec3 color;
+    uniform vec3 center;
+
+    uniform mat4 world_mat;
+    uniform mat4 proj_inv;
+
+    uniform vec3 sun_pos;
+
+    const float atm_radius = 1.2;
+    const float planet_radius = 1.0;
+
+    //Thanks to Inigo Quilez
+    // sphere of size ra centered at point ce
+    vec2 sphIntersect( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
+    {
+        vec3 oc = ro - ce;
+        float b = dot( oc, rd );
+        vec3 qc = oc - b*rd;
+        float h = ra*ra - dot( qc, qc );
+        if( h<0.0 ) return vec2(-1.0); // no intersection
+        h = sqrt( h );
+        return vec2( -b-h, -b+h );
+    }
+
+    //Atmosphere rendering based on video by Sebastian Lague who
+    //based his work on an article in GPU Gems about real time
+    //atmospheric scattering
+    float getDensity(vec3 pos) {
+        float height = length(pos) - 1.0;
+        height = height/(atm_radius - 1.0);
+        float local_density = exp(-height * 2.0) * (1.0 - height);
+        return local_density;
+    }
+
+    float calcDepth(vec3 ro, vec3 rd, float len) {
+        int num_samples = 10;
+
+        vec3 pos = ro;
+        float step = len/float(num_samples - 1);
+        float depth = 0.0;
+
+        for (int i = 0; i < num_samples; i++) {
+            depth += getDensity(pos) * step;
+            pos += step * rd;
+        }
+
+        return depth;
+    }
+
+    float calcLight(vec3 ro, vec3 rd, float len) {
+        int num_samples = 10;
+
+        vec3 pos = ro;
+        float step = len/float(num_samples - 1);
+
+        float in_light = 0.0;
+
+        for (int i = 0; i < num_samples; i++) {
+            vec3 sundir = sun_pos - pos;
+            vec2 t = sphIntersect(pos, sundir, vec3(0.0), atm_radius);
+
+            float sun_len = t.y;
+
+            float optical_depth = calcDepth(pos, sundir, sun_len);
+            float view_depth = calcDepth(pos, -rd, step * float(i));
+
+            float trans = exp(-(optical_depth + view_depth));
+            float density = getDensity(pos);
+
+            in_light += trans * density * step;
+
+            pos += rd * step;
+        }
+
+        return in_light;
+    }
+
+    void main() {
+        vec4 previousPassColor = texture2D(tDiffuse, vUv);
+
+        //float normalizedDepth = unpackRGBAToDepth(  texture2D( tDepth, vUv) );
+
+        float fragCoordZ = texture2D( tDepth, vUv ).x;
+        float viewZ = perspectiveDepthToViewZ( fragCoordZ, 0.1, 50.0 );
+        float normalizedDepth = viewZToOrthographicDepth( viewZ, 0.1, 50.0 );
+
+
+        vec3 oc = center;
+        vec3 rd = normalize((proj_inv * vec4(vUv*2. - 1., 0.0, 1)).xyz);
+        rd = (world_mat * vec4(rd, 0)).xyz;
+
+        vec2 t = sphIntersect(center, rd, vec3(0.0), atm_radius);
+
+        if (t.y > 0.0) {
+            float near = t.x;
+            if (t.x < 0.0) near = 0.0;
+            float through = min(t.y - near, (viewZ) - near);
+
+            vec3 pos = center + (near) * rd;
+            float light = calcLight(pos, rd, through);
+
+            gl_FragColor = previousPassColor * (1.0 - light) + light;
+
+            //if (through > 1.0) gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            //else gl_FragColor = vec4(through * 20.0);
+            gl_FragColor.w = 1.0;
+
+            return;
+        }
+
+        gl_FragColor = previousPassColor;
+    }
+    `
+    ,
+};
+
+atmosphere.uniforms.color.value.r = 1.0;
+atmosphere.uniforms.color.value.g = 0.5;
+atmosphere.uniforms.color.value.b = 0.5;
+
+var atmospherePass = new ShaderPass(atmosphere); 
+
+var depthRenderTarget = new THREE.WebGLRenderTarget( window.innerWidth,  window.innerHeight );
+depthRenderTarget.texture.format = THREE.RGBAFormat;
+depthRenderTarget.texture.minFilter = THREE.NearestFilter;
+depthRenderTarget.texture.magFilter = THREE.NearestFilter;
+depthRenderTarget.texture.generateMipmaps = false;
+depthRenderTarget.stencilBuffer = false;
+depthRenderTarget.depthBuffer = true;
+depthRenderTarget.depthTexture = new THREE.DepthTexture();
+depthRenderTarget.depthTexture.type = THREE.UnsignedShortType;
+
+atmospherePass.uniforms.tDepth.value = depthRenderTarget.depthTexture;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(atmospherePass);
+composer.addPass(new OutputPass());
+
+
+function animate( time ) {
+    //renderer.render( scene, camera );
+
+    camera.updateMatrixWorld();
+    atmospherePass.uniforms.center.value.set(camera.position.x, camera.position.y, camera.position.z);
+
+    atmospherePass.uniforms.proj_inv.value.copy(camera.projectionMatrixInverse);
+    atmospherePass.uniforms.world_mat.value.copy(camera.matrixWorld);
+
+    //console.log(atmospherePass.uniforms.world_mat.value);
+    //console.log(atmospherePass.uniforms.center.value);
+    renderer.setRenderTarget(depthRenderTarget);
+    renderer.render(scene, camera);
+    composer.render();
+}
+renderer.setAnimationLoop( animate );
+
