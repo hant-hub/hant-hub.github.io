@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { FlyControls } from 'three/addons/controls/FlyControls.js';
-import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+import {FlyControls} from 'three/addons/controls/FlyControls.js';
+import {SimplexNoise} from 'three/addons/math/SimplexNoise.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
